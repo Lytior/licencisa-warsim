@@ -76,7 +76,7 @@ local function enganchar(veh, remolque)
         return
     end
 
-    -- Algunos vehiculos no tienen punto de enganche: lo pegamos detras "a mano"
+    -- Vehiculo sin punto de enganche (sin hueso 'attach_male'): lo pegamos detras "a mano"
     local vMin = GetModelDimensions(GetEntityModel(veh))
     local tMin, tMax = GetModelDimensions(GetEntityModel(remolque))
     local offY = vMin.y - tMax.y - 0.2
@@ -140,6 +140,31 @@ CreateThread(function()
         Wait(espera)
     end
 end)
+
+-- /comprobarenganche : dice si el vehiculo en el que estas tiene punto de enganche
+-- (hueso 'attach_male' en el modelo) y lo marca con una flecha durante 10 segundos
+RegisterCommand(Config.ComandoComprobar, function()
+    local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+    if veh == 0 then
+        aviso('~r~Subete a un vehiculo primero.')
+        return
+    end
+
+    local nombre = GetDisplayNameFromVehicleModel(GetEntityModel(veh))
+    local hueso = GetEntityBoneIndexByName(veh, 'attach_male')
+    if hueso == -1 then
+        aviso(('~r~%s NO tiene punto de enganche.~s~ Se usara el enganche rigido.'):format(nombre))
+        return
+    end
+
+    aviso(('~g~%s SI tiene punto de enganche.~s~ Mira la flecha roja.'):format(nombre))
+    local fin = GetGameTimer() + 10000
+    while GetGameTimer() < fin and DoesEntityExist(veh) do
+        local p = GetWorldPositionOfEntityBone(veh, hueso)
+        DrawMarker(0, p.x, p.y, p.z + 0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.3, 0.3, 255, 0, 0, 200, true, false, 2, false, nil, nil, false)
+        Wait(0)
+    end
+end, false)
 
 RegisterNetEvent('warsim_remolque:spawn', function()
     local ped = PlayerPedId()

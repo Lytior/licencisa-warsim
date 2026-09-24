@@ -43,6 +43,7 @@ Config.Tecla = 'H'
 -- Comandos
 Config.ComandoSpawn = 'remolque'          -- crea el remolque detras de ti
 Config.ComandoBorrar = 'borrarremolque'   -- borra el remolque que has creado
+Config.ComandoComprobar = 'comprobarenganche' -- dice si tu vehiculo tiene punto de enganche
 
 -- Permisos para /remolque y /borrarremolque (ACE: warsim.remolque)
 -- En server.cfg:  add_ace group.admin warsim.remolque allow

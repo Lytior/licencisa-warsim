@@ -27,6 +27,7 @@
 |---|---|
 | Sacar el remolque detrás de ti | `/remolque` |
 | Borrar tu remolque | `/borrarremolque` |
+| Saber si tu vehículo tiene punto de enganche | `/comprobarenganche` |
 | Enganchar / desenganchar | Súbete como conductor, da marcha atrás hasta que el enganche quede a menos de 4 m del morro del remolque y pulsa **H** |
 
 Cada jugador puede cambiar la tecla en *Ajustes > Asignación de teclas > FiveM*.
@@ -52,3 +53,31 @@ Config.VehiculosPermitidos = {
   de forma rígida para que se pueda llevar igualmente.
 - Si queréis que el script controle otros remolques, añadidlos a `Config.Remolques`
   (por ejemplo `'trailersmall'`, `'boattrailer'`, `'trailers4'`).
+
+## Punto de enganche
+
+El punto de enganche es un **hueso (bone) del modelo 3D** llamado `attach_male`, colocado
+en la parte trasera del vehículo. El remolque tiene el suyo en la lanza, llamado `attach_female`.
+GTA une el remolque por esos dos puntos. Si el vehículo no tiene `attach_male`, GTA no puede
+engancharlo de forma normal.
+
+### Cómo saber si lo tiene
+- **En el juego:** súbete al vehículo y escribe `/comprobarenganche`. Te dice si lo tiene y,
+  si lo tiene, marca con una flecha roja dónde está durante 10 segundos.
+- **En OpenIV / CodeWalker:** abre el `.yft` del vehículo y busca `attach_male` en la lista
+  de huesos (Skeleton / Bones).
+
+### Cómo ponérselo a un vehículo que no lo tiene
+Hay que editar el modelo. Solo tiene sentido en vehículos addon o en vehículos que ya reemplacéis por stream.
+1. Saca el `.yft` del vehículo con OpenIV (o cógelo de la carpeta `stream` del addon).
+2. Ábrelo en **Blender con Sollumz** (gratis) o en **ZModeler 3**.
+3. Añade un hueso o dummy llamado exactamente `attach_male` como hijo del hueso `chassis`,
+   y colócalo en la parte trasera, donde iría la bola de remolque (centrado y a la altura
+   del enganche del remolque).
+4. Exporta el `.yft` (y el `_hi.yft` si lo tiene) y ponlo en la carpeta `stream` del recurso
+   del vehículo.
+5. Reinicia el recurso y comprueba con `/comprobarenganche`.
+
+Si no queréis tocar el modelo, no pasa nada. Este script engancha igualmente el remolque de
+forma rígida a los vehículos de `Config.VehiculosPermitidos` que no tengan el punto. La única
+diferencia es que el remolque no gira en las curvas como uno de verdad.
