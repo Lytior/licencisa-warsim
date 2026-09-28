@@ -115,17 +115,28 @@ local function controlLoop()
             if r.anim ~= 'move' then
                 playAnim(ped, anims.Move, 1)
                 r.anim = 'move'
-            end
-        else
-            -- Parado: se puede sacar el arma y disparar con el sistema normal del juego.
-            local aiming = IsPlayerFreeAiming(PlayerId()) or IsControlPressed(0, 25) or IsPedShooting(ped)
-            if aiming then
-                r.anim = nil -- la tarea de apuntar sustituye a la animación de colgar
-            elseif r.anim ~= 'idle' or not IsEntityPlayingAnim(ped, anims.Idle.dict, anims.Idle.name, 3) then
-                SetEntityCoordsNoOffset(ped, r.x, r.y, r.z, false, false, false)
+                r.animAt = GetGameTimer()
+            elseif GetGameTimer() - r.animAt > 300
+                and not IsEntityPlayingAnim(ped, anims.Move.dict, anims.Move.name, 3) then
+                -- La animación de movimiento no existe o no carga: usar la de colgar
+                -- en vez de dejar al personaje en pose T.
                 playAnim(ped, anims.Idle, 1)
-                r.anim = 'idle'
+                r.anim = 'move_fallback'
             end
+        elseif GetSelectedPedWeapon(ped) ~= UNARMED then
+            -- Parado con arma en mano: la animación de colgar ocupa todo el cuerpo y bloquea
+            -- la tarea de apuntar, así que se quita para usar el sistema de armas normal.
+            if r.anim then
+                ClearPedTasks(ped)
+                SetEntityCoordsNoOffset(ped, r.x, r.y, r.z, false, false, false)
+                r.anim = nil
+            end
+        elseif r.anim ~= 'idle' or not IsEntityPlayingAnim(ped, anims.Idle.dict, anims.Idle.name, 3) then
+            -- Parado sin arma: animación de colgar quieto.
+            SetEntityCoordsNoOffset(ped, r.x, r.y, r.z, false, false, false)
+            SetEntityHeading(ped, r.heading)
+            playAnim(ped, anims.Idle, 1)
+            r.anim = 'idle'
         end
 
         BeginTextCommandDisplayHelp('STRING')

@@ -47,9 +47,9 @@ El servidor avisa a todos los clientes de quién está en rappel y dónde está 
 
 ## Qué comprobar en el servidor de pruebas
 
-- **Animaciones:** los nombres de `Config.Anims` (`missrappel` / `rappel_idle`, `rappel_walk`, `mini@repair` / `fixing_a_ped`) hay que verificarlos en juego. Si alguno no gusta o no carga, se cambia en `config.lua` sin tocar código. Si un diccionario no carga en 3 s, se omite la animación y el sistema sigue funcionando.
+- **Animaciones:** los nombres de `Config.Anims` (`missrappel` / `rappel_idle`, `mini@repair` / `fixing_a_ped`) hay que verificarlos en juego. Si alguno no gusta o no carga, se cambia en `config.lua` sin tocar código. Si un diccionario no carga en 3 s, se omite la animación y el sistema sigue funcionando.
 - **Torre de entrenamiento:** si la torre es un prop/ymap y no se detecta, revisa `Config.Detection.Flags` (por defecto mundo + objetos).
-- **Disparo en parado:** mientras el jugador apunta, la tarea de apuntar sustituye a la animación de colgar. Al dejar de apuntar vuelve la animación de reposo. Es la limitación prevista en la ficha, porque GTA no tiene una animación nativa de colgar con una mano y disparar con la otra.
+- **Disparo en parado:** mientras el jugador tiene el arma en la mano, se quita la animación de colgar para que funcione el sistema de armas normal, y el personaje queda en pose de pie sobre la cuerda. Al guardar el arma vuelve la animación de colgar. Es la limitación prevista en la ficha, porque GTA no tiene una animación nativa de colgar con una mano y disparar con la otra.
 
 ## Fuera de alcance (MVP)
 

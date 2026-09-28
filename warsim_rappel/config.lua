@@ -48,7 +48,8 @@ Config.Movement = {
 Config.Anims = {
     Hook = { dict = 'mini@repair', name = 'fixing_a_ped', duration = 2500 },
     Idle = { dict = 'missrappel', name = 'rappel_idle' },
-    Move = { dict = 'missrappel', name = 'rappel_walk' },
+    -- 'rappel_walk' no existe (deja al personaje en pose T); se usa la de colgar también al moverse.
+    Move = { dict = 'missrappel', name = 'rappel_idle' },
 }
 
 ---------------------------------------------------------------------------
