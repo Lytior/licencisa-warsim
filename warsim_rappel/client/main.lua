@@ -78,22 +78,35 @@ local function stopRappel(exitPos)
     local ped = PlayerPedId()
     rappel = nil
 
-    DetachEntity(ped, true, false)
+    -- Mantener al jugador congelado hasta dejarlo bien colocado sobre el suelo.
+    FreezeEntityPosition(ped, true)
+    -- Soltar CON colisión: con false el personaje se queda sin colisión y atraviesa el suelo.
+    DetachEntity(ped, true, true)
+    SetEntityCollision(ped, true, true)
     if DoesEntityExist(r.carrier) then DeleteEntity(r.carrier) end
-    releasePed(ped)
+    ClearPedTasks(ped)
 
     debug('fin del rappel')
     if exitPos then
-        -- exitPos es el suelo: el origen del ped va PedRootOffset por encima (si no,
-        -- los pies quedan bajo el suelo y el personaje lo atraviesa).
         RequestCollisionAtCoord(exitPos.x, exitPos.y, exitPos.z)
         local groundZ = exitPos.z
         local found, gz = GetGroundZFor_3dCoord(exitPos.x, exitPos.y, exitPos.z + 2.0, false)
         if found and math.abs(gz - exitPos.z) < 3.0 then groundZ = gz end
+        -- exitPos es el suelo: el origen del ped va PedRootOffset por encima.
         local z = groundZ + mv.PedRootOffset + 0.05
+        debug(('salida en %.2f, %.2f, suelo %.2f'):format(exitPos.x, exitPos.y, groundZ))
         SetEntityCoordsNoOffset(ped, exitPos.x, exitPos.y, z, false, false, false)
         SetEntityHeading(ped, r.heading)
+
+        -- Esperar a que cargue la colisión del suelo antes de soltarlo.
+        local t = GetGameTimer()
+        while not HasCollisionLoadedAroundEntity(ped) and GetGameTimer() - t < 2000 do
+            RequestCollisionAtCoord(exitPos.x, exitPos.y, z)
+            Wait(0)
+        end
     end
+
+    releasePed(ped)
     TriggerServerEvent('warsim_rappel:stop')
 end
 
@@ -150,6 +163,16 @@ local function controlLoop()
             elseif dir < 0 and r.z <= r.minZ then
                 stopRappel(r.bottomExit)
                 break
+            end
+
+            -- Al bajar: si ya hay suelo bajo los pies, terminar ahí aunque la altura
+            -- calculada al enganchar fuese otra (evita atravesar el suelo).
+            if dir < 0 then
+                local gz = Detection.GroundBelow(vector3(r.x, r.y, r.z), mv.PedRootOffset + 0.1, ped)
+                if gz then
+                    stopRappel(vector3(r.x, r.y, gz))
+                    break
+                end
             end
 
             SetEntityCoordsNoOffset(r.carrier, r.x, r.y, r.z, false, false, false)

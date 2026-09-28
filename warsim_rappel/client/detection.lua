@@ -33,6 +33,8 @@ local function groundBelow(pos, depth, ped)
     if hit then return coords.z end
 end
 
+Detection.GroundBelow = groundBelow
+
 -- Busca, subiendo por la pared, el borde superior y la cornisa donde se puede pisar.
 local function findLedge(wall, normal, fromZ, ped)
     local probeStart = wall + normal * 0.8
