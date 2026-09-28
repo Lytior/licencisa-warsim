@@ -39,6 +39,7 @@ end
 local function releasePed(ped)
     FreezeEntityPosition(ped, false)
     SetPedCanRagdoll(ped, true)
+    ClearPedSecondaryTask(ped)
     ClearPedTasks(ped)
 end
 
@@ -112,14 +113,23 @@ local function controlLoop()
 
             SetEntityCoordsNoOffset(ped, r.x, r.y, r.z, false, false, false)
             SetEntityHeading(ped, r.heading)
-            if r.anim ~= 'move' then
-                playAnim(ped, anims.Move, 1)
+            local base = (anims.WalkLegs and not r.legsFailed) and anims.Legs or anims.Move
+            if r.anim ~= 'move' and r.anim ~= 'move_fallback' then
+                playAnim(ped, base, 1)
+                if base == anims.Legs then
+                    -- Encima, solo de cintura para arriba (16) y como tarea secundaria (32):
+                    -- torso y manos en la cuerda mientras las piernas caminan.
+                    playAnim(ped, anims.Idle, 1 + 16 + 32)
+                    SetEntityAnimSpeed(ped, base.dict, base.name, base.speed or 1.0)
+                end
                 r.anim = 'move'
                 r.animAt = GetGameTimer()
-            elseif GetGameTimer() - r.animAt > 300
-                and not IsEntityPlayingAnim(ped, anims.Move.dict, anims.Move.name, 3) then
-                -- La animación de movimiento no existe o no carga: usar la de colgar
-                -- en vez de dejar al personaje en pose T.
+            elseif r.anim == 'move' and GetGameTimer() - r.animAt > 300
+                and not IsEntityPlayingAnim(ped, base.dict, base.name, 3) then
+                -- La animación no existe o no carga: usar la de colgar en vez de dejar
+                -- al personaje en pose T.
+                if base == anims.Legs then r.legsFailed = true end
+                ClearPedSecondaryTask(ped)
                 playAnim(ped, anims.Idle, 1)
                 r.anim = 'move_fallback'
             end
@@ -127,12 +137,14 @@ local function controlLoop()
             -- Parado con arma en mano: la animación de colgar ocupa todo el cuerpo y bloquea
             -- la tarea de apuntar, así que se quita para usar el sistema de armas normal.
             if r.anim then
+                ClearPedSecondaryTask(ped)
                 ClearPedTasks(ped)
                 SetEntityCoordsNoOffset(ped, r.x, r.y, r.z, false, false, false)
                 r.anim = nil
             end
         elseif r.anim ~= 'idle' or not IsEntityPlayingAnim(ped, anims.Idle.dict, anims.Idle.name, 3) then
             -- Parado sin arma: animación de colgar quieto.
+            ClearPedSecondaryTask(ped)
             SetEntityCoordsNoOffset(ped, r.x, r.y, r.z, false, false, false)
             SetEntityHeading(ped, r.heading)
             playAnim(ped, anims.Idle, 1)

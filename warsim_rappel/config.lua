@@ -50,6 +50,12 @@ Config.Anims = {
     Idle = { dict = 'missrappel', name = 'rappel_idle' },
     -- 'rappel_walk' no existe (deja al personaje en pose T); se usa la de colgar también al moverse.
     Move = { dict = 'missrappel', name = 'rappel_idle' },
+
+    -- Piernas caminando al subir/bajar: 'Legs' se reproduce en todo el cuerpo y encima,
+    -- solo de cintura para arriba, la animación de colgar (manos en la cuerda).
+    -- Si 'Legs' no carga, se vuelve solo a 'Move'. Poner en false para desactivarlo.
+    WalkLegs = true,
+    Legs = { dict = 'move_m@generic', name = 'walk', speed = 1.0 },
 }
 
 ---------------------------------------------------------------------------
