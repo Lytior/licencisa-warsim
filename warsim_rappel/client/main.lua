@@ -72,38 +72,62 @@ end
 ---------------------------------------------------------------------------
 -- Fin del rappel
 ---------------------------------------------------------------------------
-local function stopRappel(exitPos)
+-- Red de seguridad: si tras soltarlo el personaje cae por debajo del suelo esperado,
+-- se le devuelve al punto donde usó la cuerda.
+local function watchFall(ped, groundZ, safePos)
+    CreateThread(function()
+        local t = GetGameTimer()
+        while GetGameTimer() - t < 5000 do
+            local p = GetEntityCoords(ped)
+            if p.z < groundZ - 3.0 then
+                debug(('ha atravesado el suelo (z %.2f, suelo %.2f): vuelta al punto de inicio'):format(p.z, groundZ))
+                FreezeEntityPosition(ped, true)
+                SetEntityCollision(ped, true, true)
+                SetEntityVelocity(ped, 0.0, 0.0, 0.0)
+                SetEntityCoords(ped, safePos.x, safePos.y, safePos.z, false, false, false, false)
+                local w = GetGameTimer()
+                while not HasCollisionLoadedAroundEntity(ped) and GetGameTimer() - w < 2000 do
+                    RequestCollisionAtCoord(safePos.x, safePos.y, safePos.z)
+                    Wait(0)
+                end
+                FreezeEntityPosition(ped, false)
+                return
+            end
+            Wait(0)
+        end
+    end)
+end
+
+-- how = 'drop'  → abajo: se suelta la cuerda a ReleaseHeight del suelo y cae solo.
+-- how = 'top'   → arriba: se coloca de pie en la cornisa.
+-- how = nil     → muerte / recurso parado: solo se suelta.
+local function stopRappel(how)
     local r = rappel
     if not r then return end
     local ped = PlayerPedId()
     rappel = nil
+    debug('fin del rappel: ' .. tostring(how))
 
-    -- Mantener al jugador congelado hasta dejarlo bien colocado sobre el suelo.
-    FreezeEntityPosition(ped, true)
     -- Soltar CON colisión: con false el personaje se queda sin colisión y atraviesa el suelo.
     DetachEntity(ped, true, true)
     SetEntityCollision(ped, true, true)
     if DoesEntityExist(r.carrier) then DeleteEntity(r.carrier) end
-    ClearPedTasks(ped)
 
-    debug('fin del rappel')
-    if exitPos then
-        RequestCollisionAtCoord(exitPos.x, exitPos.y, exitPos.z)
-        local groundZ = exitPos.z
-        local found, gz = GetGroundZFor_3dCoord(exitPos.x, exitPos.y, exitPos.z + 2.0, false)
-        if found and math.abs(gz - exitPos.z) < 3.0 then groundZ = gz end
-        -- exitPos es el suelo: el origen del ped va PedRootOffset por encima.
-        local z = groundZ + mv.PedRootOffset + 0.05
-        debug(('salida en %.2f, %.2f, suelo %.2f'):format(exitPos.x, exitPos.y, groundZ))
-        SetEntityCoordsNoOffset(ped, exitPos.x, exitPos.y, z, false, false, false)
+    if how == 'top' then
+        local e = r.topExit
+        FreezeEntityPosition(ped, true)
+        RequestCollisionAtCoord(e.x, e.y, e.z)
+        SetEntityCoordsNoOffset(ped, e.x, e.y, e.z + mv.PedRootOffset + 0.05, false, false, false)
         SetEntityHeading(ped, r.heading)
-
-        -- Esperar a que cargue la colisión del suelo antes de soltarlo.
         local t = GetGameTimer()
         while not HasCollisionLoadedAroundEntity(ped) and GetGameTimer() - t < 2000 do
-            RequestCollisionAtCoord(exitPos.x, exitPos.y, z)
+            RequestCollisionAtCoord(e.x, e.y, e.z)
             Wait(0)
         end
+        watchFall(ped, e.z, r.startPos)
+    elseif how == 'drop' then
+        RequestCollisionAtCoord(r.x, r.y, r.bottomZ)
+        watchFall(ped, r.bottomZ, r.startPos)
     end
 
     releasePed(ped)
@@ -158,19 +182,20 @@ local function controlLoop()
             r.z = r.z + dir * speed * GetFrameTime()
 
             if dir > 0 and r.z >= r.maxZ then
-                stopRappel(r.topExit)
+                stopRappel('top')
                 break
             elseif dir < 0 and r.z <= r.minZ then
-                stopRappel(r.bottomExit)
+                stopRappel('drop')
                 break
             end
 
-            -- Al bajar: si ya hay suelo bajo los pies, terminar ahí aunque la altura
-            -- calculada al enganchar fuese otra (evita atravesar el suelo).
-            if dir < 0 then
-                local gz = Detection.GroundBelow(vector3(r.x, r.y, r.z), mv.PedRootOffset + 0.1, ped)
+            -- Al bajar: si ya hay suelo a ReleaseHeight bajo los pies, soltar la cuerda ahí
+            -- aunque la altura calculada al enganchar fuese otra.
+            if dir < 0 and r.z < r.maxZ - 1.5 then
+                local gz = Detection.GroundBelow(vector3(r.x, r.y, r.z),
+                    mv.PedRootOffset + mv.ReleaseHeight + 0.1, ped)
                 if gz then
-                    stopRappel(vector3(r.x, r.y, gz))
+                    stopRappel('drop')
                     break
                 end
             end
@@ -212,10 +237,12 @@ local function startRappel(data)
     local n = data.normal
     local ropeXY = data.wall + n * mv.WallOffset
 
-    local minZ = data.bottomZ + mv.PedRootOffset
+    -- Abajo no se llega al suelo: se suelta la cuerda a ReleaseHeight y se cae solo.
+    local minZ = data.bottomZ + mv.PedRootOffset + mv.ReleaseHeight
     local maxZ = data.topZ + mv.PedRootOffset - mv.TopHangDepth
     local heading = GetHeadingFromVector_2d(-n.x, -n.y)
-    local z = data.startAtTop and maxZ or math.min(minZ + 0.3, maxZ)
+    local z = data.startAtTop and maxZ or math.min(data.bottomZ + mv.PedRootOffset + 0.3, maxZ)
+    local startPos = GetEntityCoords(ped)
 
     local carrier = createCarrier(ropeXY.x, ropeXY.y, z, heading)
     if not carrier then
@@ -233,7 +260,8 @@ local function startRappel(data)
         maxZ = maxZ,
         heading = heading,
         topExit = data.topStand,
-        bottomExit = vector3(ropeXY.x, ropeXY.y, data.bottomZ),
+        bottomZ = data.bottomZ,
+        startPos = startPos,
         hanging = false,
     }
 
