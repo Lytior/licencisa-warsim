@@ -16,8 +16,10 @@ Recurso de ESX para **Operation Warsim**. Permite subir y bajar con cuerda por c
          close = true,
          consume = 0,
          server = { export = 'warsim_rappel.cuerda_arnes' },
+         client = { image = 'nui://warsim_rappel/img/cuerda_arnes.png' },
      },
      ```
+     La línea `client = { image = ... }` pone el icono del objeto, que va incluido en este recurso (`img/cuerda_arnes.png`); no hace falta copiarlo a `ox_inventory/web/images`.
      `consume = 0` evita que ox gaste la cuerda al usarla: la gasta el script solo si la superficie es válida. La línea `server = { export = ... }` es la que hace que ox avise al script al usar el objeto.
 3. Añade `cuerda_arnes` al catálogo de la tienda de objetos existente con el precio que corresponda.
 

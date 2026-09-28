@@ -21,4 +21,9 @@ server_scripts {
     'server/main.lua',
 }
 
+-- Icono del objeto: ox_inventory lo carga con nui://warsim_rappel/img/cuerda_arnes.png
+files {
+    'img/cuerda_arnes.png',
+}
+
 dependency 'es_extended'
