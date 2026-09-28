@@ -39,21 +39,55 @@ end
 local function releasePed(ped)
     FreezeEntityPosition(ped, false)
     SetPedCanRagdoll(ped, true)
-    ClearPedSecondaryTask(ped)
     ClearPedTasks(ped)
+end
+
+-- El personaje va enganchado a un objeto invisible y lo que se mueve es ese objeto.
+-- Teletransportar al propio ped congelado en cada fotograma lo deja en pose T.
+local function createCarrier(x, y, z, heading)
+    local model = mv.CarrierModel
+    RequestModel(model)
+    local t = GetGameTimer()
+    while not HasModelLoaded(model) do
+        if GetGameTimer() - t > 3000 then return nil end
+        Wait(0)
+    end
+    local obj = CreateObjectNoOffset(model, x, y, z, true, false, false)
+    SetModelAsNoLongerNeeded(model)
+    SetEntityVisible(obj, false, false)
+    SetEntityCollision(obj, false, false)
+    FreezeEntityPosition(obj, true)
+    SetEntityHeading(obj, heading)
+    return obj
+end
+
+local function playHang(ped)
+    playAnim(ped, anims.Idle, 1)
 end
 
 ---------------------------------------------------------------------------
 -- Fin del rappel
 ---------------------------------------------------------------------------
 local function stopRappel(exitPos)
-    if not rappel then return end
+    local r = rappel
+    if not r then return end
     local ped = PlayerPedId()
     rappel = nil
 
+    DetachEntity(ped, true, false)
+    if DoesEntityExist(r.carrier) then DeleteEntity(r.carrier) end
     releasePed(ped)
+
     if exitPos then
-        SetEntityCoords(ped, exitPos.x, exitPos.y, exitPos.z, false, false, false, false)
+        -- exitPos es el suelo: el origen del ped va PedRootOffset por encima (si no,
+        -- los pies quedan bajo el suelo y el personaje lo atraviesa).
+        RequestCollisionAtCoord(exitPos.x, exitPos.y, exitPos.z)
+        local groundZ = exitPos.z
+        local found, gz = GetGroundZFor_3dCoord(exitPos.x, exitPos.y, exitPos.z + 2.0, false)
+        if found and math.abs(gz - exitPos.z) < 3.0 then groundZ = gz end
+        local z = groundZ + mv.PedRootOffset + 0.05
+        SetEntityCoordsNoOffset(ped, exitPos.x, exitPos.y, z, false, false, false)
+        SetEntityHeading(ped, r.heading)
     end
     TriggerServerEvent('warsim_rappel:stop')
 end
@@ -66,7 +100,7 @@ local function controlLoop()
         local ped = PlayerPedId()
         local r = rappel
 
-        if IsEntityDead(ped) then
+        if IsEntityDead(ped) or not DoesEntityExist(r.carrier) then
             stopRappel(nil)
             break
         end
@@ -88,6 +122,7 @@ local function controlLoop()
         local down = IsDisabledControlPressed(0, mv.KeyDown)
         local dir = 0
         if up and not down then dir = 1 elseif down and not up then dir = -1 end
+        local armed = GetSelectedPedWeapon(ped) ~= UNARMED
 
         if dir ~= 0 then
             -- En movimiento: las dos manos en la cuerda, sin armas.
@@ -96,8 +131,9 @@ local function controlLoop()
             DisableControlAction(0, 37, true)  -- rueda de armas
             DisableControlAction(0, 45, true)  -- recargar
             DisablePlayerFiring(PlayerId(), true)
-            if GetSelectedPedWeapon(ped) ~= UNARMED then
+            if armed then
                 SetCurrentPedWeapon(ped, UNARMED, true)
+                armed = false
             end
 
             local speed = dir > 0 and mv.AscendSpeed or mv.DescendSpeed
@@ -111,44 +147,25 @@ local function controlLoop()
                 break
             end
 
-            SetEntityCoordsNoOffset(ped, r.x, r.y, r.z, false, false, false)
-            SetEntityHeading(ped, r.heading)
-            local base = (anims.WalkLegs and not r.legsFailed) and anims.Legs or anims.Move
-            if r.anim ~= 'move' and r.anim ~= 'move_fallback' then
-                playAnim(ped, base, 1)
-                if base == anims.Legs then
-                    -- Encima, solo de cintura para arriba (16) y como tarea secundaria (32):
-                    -- torso y manos en la cuerda mientras las piernas caminan.
-                    playAnim(ped, anims.Idle, 1 + 16 + 32)
-                    SetEntityAnimSpeed(ped, base.dict, base.name, base.speed or 1.0)
-                end
-                r.anim = 'move'
-                r.animAt = GetGameTimer()
-            elseif r.anim == 'move' and GetGameTimer() - r.animAt > 300
-                and not IsEntityPlayingAnim(ped, base.dict, base.name, 3) then
-                -- La animación no existe o no carga: usar la de colgar en vez de dejar
-                -- al personaje en pose T.
-                if base == anims.Legs then r.legsFailed = true end
-                ClearPedSecondaryTask(ped)
-                playAnim(ped, anims.Idle, 1)
-                r.anim = 'move_fallback'
-            end
-        elseif GetSelectedPedWeapon(ped) ~= UNARMED then
+            SetEntityCoordsNoOffset(r.carrier, r.x, r.y, r.z, false, false, false)
+        end
+
+        if armed then
             -- Parado con arma en mano: la animación de colgar ocupa todo el cuerpo y bloquea
             -- la tarea de apuntar, así que se quita para usar el sistema de armas normal.
-            if r.anim then
-                ClearPedSecondaryTask(ped)
+            -- El personaje gira con la cámara para poder apuntar alrededor.
+            if r.hanging then
                 ClearPedTasks(ped)
-                SetEntityCoordsNoOffset(ped, r.x, r.y, r.z, false, false, false)
-                r.anim = nil
+                r.hanging = false
             end
-        elseif r.anim ~= 'idle' or not IsEntityPlayingAnim(ped, anims.Idle.dict, anims.Idle.name, 3) then
-            -- Parado sin arma: animación de colgar quieto.
-            ClearPedSecondaryTask(ped)
-            SetEntityCoordsNoOffset(ped, r.x, r.y, r.z, false, false, false)
-            SetEntityHeading(ped, r.heading)
-            playAnim(ped, anims.Idle, 1)
-            r.anim = 'idle'
+            SetEntityHeading(r.carrier, GetGameplayCamRot(2).z)
+        else
+            -- Sin arma (parado o moviéndose): agarrado a la cuerda todo el rato.
+            if not r.hanging or not IsEntityPlayingAnim(ped, anims.Idle.dict, anims.Idle.name, 3) then
+                SetEntityHeading(r.carrier, r.heading)
+                playHang(ped)
+                r.hanging = true
+            end
         end
 
         BeginTextCommandDisplayHelp('STRING')
@@ -169,24 +186,33 @@ local function startRappel(data)
 
     local minZ = data.bottomZ + mv.PedRootOffset
     local maxZ = data.topZ + mv.PedRootOffset - mv.TopHangDepth
+    local heading = GetHeadingFromVector_2d(-n.x, -n.y)
+    local z = data.startAtTop and maxZ or math.min(minZ + 0.3, maxZ)
+
+    local carrier = createCarrier(ropeXY.x, ropeXY.y, z, heading)
+    if not carrier then
+        releasePed(ped)
+        return
+    end
 
     rappel = {
+        carrier = carrier,
         x = ropeXY.x,
         y = ropeXY.y,
-        z = data.startAtTop and maxZ or math.min(minZ + 0.3, maxZ),
+        z = z,
         minZ = minZ,
         maxZ = maxZ,
-        heading = GetHeadingFromVector_2d(-n.x, -n.y),
+        heading = heading,
         topExit = data.topStand,
         bottomExit = vector3(ropeXY.x, ropeXY.y, data.bottomZ),
-        anim = nil,
+        hanging = false,
     }
 
     SetCurrentPedWeapon(ped, UNARMED, true)
     SetPedCanRagdoll(ped, false)
-    FreezeEntityPosition(ped, true)
-    SetEntityCoordsNoOffset(ped, rappel.x, rappel.y, rappel.z, false, false, false)
-    SetEntityHeading(ped, rappel.heading)
+    FreezeEntityPosition(ped, false)
+    AttachEntityToEntity(ped, carrier, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        false, false, false, false, 2, true)
 
     CreateThread(controlLoop)
 end
@@ -251,8 +277,10 @@ end)
 
 AddEventHandler('onResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
-    if rappel or pending then
-        rappel, pending = nil, nil
+    if rappel then
+        stopRappel(nil)
+    elseif pending then
+        pending = nil
         releasePed(PlayerPedId())
     end
 end)

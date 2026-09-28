@@ -40,6 +40,7 @@ Config.Movement = {
     TopHangDepth = 1.3,     -- cuánto por debajo del borde cuelga el jugador al empezar arriba
     KeyUp = 32,             -- INPUT_MOVE_UP_ONLY (W)
     KeyDown = 33,           -- INPUT_MOVE_DOWN_ONLY (S)
+    CarrierModel = `prop_golf_ball`, -- objeto invisible al que va enganchado el jugador
 }
 
 ---------------------------------------------------------------------------
@@ -47,15 +48,8 @@ Config.Movement = {
 ---------------------------------------------------------------------------
 Config.Anims = {
     Hook = { dict = 'mini@repair', name = 'fixing_a_ped', duration = 2500 },
+    -- Agarrado a la cuerda: se usa todo el rato, parado y al subir/bajar.
     Idle = { dict = 'missrappel', name = 'rappel_idle' },
-    -- 'rappel_walk' no existe (deja al personaje en pose T); se usa la de colgar también al moverse.
-    Move = { dict = 'missrappel', name = 'rappel_idle' },
-
-    -- Piernas caminando al subir/bajar: 'Legs' se reproduce en todo el cuerpo y encima,
-    -- solo de cintura para arriba, la animación de colgar (manos en la cuerda).
-    -- Si 'Legs' no carga, se vuelve solo a 'Move'. Poner en false para desactivarlo.
-    WalkLegs = true,
-    Legs = { dict = 'move_m@generic', name = 'walk', speed = 1.0 },
 }
 
 ---------------------------------------------------------------------------
