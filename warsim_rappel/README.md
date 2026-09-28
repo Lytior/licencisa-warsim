@@ -14,9 +14,11 @@ Recurso de ESX para **Operation Warsim**. Permite subir y bajar con cuerda por c
          weight = 2000,
          stack = true,
          close = true,
+         consume = 0,
+         server = { export = 'warsim_rappel.cuerda_arnes' },
      },
      ```
-     ox_inventory respeta los objetos registrados con `ESX.RegisterUsableItem`, así que no hace falta nada más.
+     `consume = 0` evita que ox gaste la cuerda al usarla: la gasta el script solo si la superficie es válida. La línea `server = { export = ... }` es la que hace que ox avise al script al usar el objeto.
 3. Añade `cuerda_arnes` al catálogo de la tienda de objetos existente con el precio que corresponda.
 
 No hay restricción de rango: cualquier jugador que tenga el objeto puede usarlo.

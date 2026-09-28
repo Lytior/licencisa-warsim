@@ -1,5 +1,8 @@
 Config = {}
 
+-- Escribe cada paso en la consola F8 (cliente) y en la del servidor. Poner en false en producción.
+Config.Debug = true
+
 -- Nombre interno del objeto de inventario (debe coincidir con el definido en sql/items.sql
 -- o en ox_inventory). La compra/reparto lo gestiona la tienda de objetos existente.
 Config.ItemName = 'cuerda_arnes'

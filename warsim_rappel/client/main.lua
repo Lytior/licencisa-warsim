@@ -6,6 +6,10 @@ local UNARMED = `WEAPON_UNARMED`
 local rappel = nil   -- estado del rappel en curso
 local pending = nil  -- superficie detectada a la espera de que el servidor consuma el objeto
 
+local function debug(...)
+    if Config.Debug then print('[warsim_rappel]', ...) end
+end
+
 local function notify(msg)
     ESX.ShowNotification(msg)
 end
@@ -78,6 +82,7 @@ local function stopRappel(exitPos)
     if DoesEntityExist(r.carrier) then DeleteEntity(r.carrier) end
     releasePed(ped)
 
+    debug('fin del rappel')
     if exitPos then
         -- exitPos es el suelo: el origen del ped va PedRootOffset por encima (si no,
         -- los pies quedan bajo el suelo y el personaje lo atraviesa).
@@ -191,6 +196,7 @@ local function startRappel(data)
 
     local carrier = createCarrier(ropeXY.x, ropeXY.y, z, heading)
     if not carrier then
+        debug('no se pudo crear el objeto de enganche (modelo no carga)')
         releasePed(ped)
         return
     end
@@ -230,18 +236,23 @@ end
 -- El servidor avisa de que el jugador ha usado el objeto.
 RegisterNetEvent('warsim_rappel:tryStart', function()
     local ped = PlayerPedId()
+    debug('objeto usado, comprobando superficie...')
     if rappel or pending or not canStart(ped) then
+        debug('no se puede empezar ahora (ya en rappel, en vehículo, cayendo, nadando...)')
         notify(Config.Text.CantNow)
-        TriggerServerEvent('warsim_rappel:cancel')
+        TriggerServerEvent('warsim_rappel:cancel', 'no puede ahora')
         return
     end
 
     local data, err = Detection.Find(ped)
     if not data then
+        debug('superficie no válida: ' .. tostring(err))
         notify(err)
-        TriggerServerEvent('warsim_rappel:cancel') -- el objeto NO se consume
+        TriggerServerEvent('warsim_rappel:cancel', err) -- el objeto NO se consume
         return
     end
+    debug(('superficie válida: %s, suelo %.2f, borde %.2f, altura %.2f m'):format(
+        data.startAtTop and 'desde arriba' or 'desde abajo', data.bottomZ, data.topZ, data.topZ - data.bottomZ))
 
     pending = data
     FreezeEntityPosition(ped, true)
@@ -265,6 +276,7 @@ end)
 RegisterNetEvent('warsim_rappel:begin', function(ok)
     local data = pending
     pending = nil
+    debug('respuesta del servidor: ' .. tostring(ok))
     if not data then return end
 
     if not ok then
