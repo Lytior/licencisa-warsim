@@ -51,7 +51,7 @@ El servidor avisa a todos los clientes de quién está en rappel y dónde está 
 
 ## Qué comprobar en el servidor de pruebas
 
-- **Animaciones:** los nombres de `Config.Anims` (`missrappel` / `rappel_idle`, `mini@repair` / `fixing_a_ped`) hay que verificarlos en juego. Si alguno no gusta o no carga, se cambia en `config.lua` sin tocar código. Si un diccionario no carga en 3 s, se omite la animación y el sistema sigue funcionando.
+- **Animaciones:** `missrappel` → `rappel_idle` (parado) y `rappel_walk` (subiendo o bajando), y `mp_common_heist` → `rappel_intro` al engancharse desde arriba. Se cambian en `config.lua` sin tocar código. Mientras está en la cuerda, al personaje se le quita la gravedad (`SetPedGravity`) en lugar de congelarlo: congelar a un ped y moverlo cada fotograma lo deja en pose T.
 - **Torre de entrenamiento:** si la torre es un prop/ymap y no se detecta, revisa `Config.Detection.Flags` (por defecto mundo + objetos).
 - **Disparo en parado:** mientras el jugador tiene el arma en la mano, se quita la animación de colgar para que funcione el sistema de armas normal, y el personaje gira con la cámara para poder apuntar alrededor. Al guardar el arma vuelve a agarrarse a la cuerda. GTA no tiene una animación nativa de colgar con una mano y disparar con la otra.
 

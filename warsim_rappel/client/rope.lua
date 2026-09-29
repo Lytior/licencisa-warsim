@@ -32,7 +32,8 @@ local function create(entry, ped)
     SetEntityVisible(obj, false, false)
     SetEntityCollision(obj, false, false)
 
-    local p = GetEntityCoords(ped)
+    -- La cuerda sale de la mano izquierda (SKEL_L_Hand).
+    local p = GetPedBoneCoords(ped, 36029, 0.0, 0.0, 0.0)
     local length = #(a - p)
     local rope = AddRope(a.x, a.y, a.z, 0.0, 0.0, 0.0, length, Config.Rope.Type,
         Config.Detection.MaxHeight + 5.0, 0.5, 1.0, false, false, false, 1.0, false, 0)

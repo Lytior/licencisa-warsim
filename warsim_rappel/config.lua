@@ -36,24 +36,28 @@ Config.Detection = {
 -- Movimiento
 ---------------------------------------------------------------------------
 Config.Movement = {
-    AscendSpeed = 1.6,      -- m/s pulsando W
-    DescendSpeed = 2.4,     -- m/s pulsando S
+    AscendSpeed = 2.5,      -- m/s pulsando W
+    DescendSpeed = 2.0,     -- m/s pulsando S
     WallOffset = 0.45,      -- separación (m) del jugador respecto a la pared
     PedRootOffset = 1.0,    -- altura del origen del ped sobre los pies
-    TopHangDepth = 1.3,
-    ReleaseHeight = 1.0,    -- al bajar, se suelta la cuerda a esta altura del suelo y se cae solo     -- cuánto por debajo del borde cuelga el jugador al empezar arriba
+    TopHangDepth = 1.3,     -- cuánto por debajo del borde cuelga el jugador al empezar arriba
+    ReleaseHeight = 1.0,    -- al bajar, se suelta la cuerda a esta altura del suelo y se cae solo
     KeyUp = 32,             -- INPUT_MOVE_UP_ONLY (W)
     KeyDown = 33,           -- INPUT_MOVE_DOWN_ONLY (S)
-    CarrierModel = `prop_golf_ball`, -- objeto invisible al que va enganchado el jugador
 }
 
 ---------------------------------------------------------------------------
--- Animaciones (verificar en juego; se pueden cambiar sin tocar código)
+-- Animaciones (flag: 1 = bucle, 2 = se queda en el último fotograma)
 ---------------------------------------------------------------------------
 Config.Anims = {
-    Hook = { dict = 'mini@repair', name = 'fixing_a_ped', duration = 2500 },
-    -- Agarrado a la cuerda: se usa todo el rato, parado y al subir/bajar.
-    Idle = { dict = 'missrappel', name = 'rappel_idle' },
+    -- Enganche desde arriba: pasar el borde (la de las misiones de golpe).
+    HookTop = { dict = 'mp_common_heist', name = 'rappel_intro', flag = 2, blend = 8.0, duration = 3000 },
+    -- Enganche desde abajo.
+    HookBottom = { dict = 'mini@repair', name = 'fixing_a_ped', flag = 1, duration = 2500 },
+    -- Parado en la cuerda.
+    Idle = { dict = 'missrappel', name = 'rappel_idle', flag = 2, blend = 4.0 },
+    -- Subiendo/bajando: piernas caminando contra la pared.
+    Move = { dict = 'missrappel', name = 'rappel_walk', flag = 1, blend = 7.0 },
 }
 
 ---------------------------------------------------------------------------
