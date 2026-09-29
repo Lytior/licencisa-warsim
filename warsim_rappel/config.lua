@@ -44,6 +44,20 @@ Config.Movement = {
     ReleaseHeight = 1.0,    -- al bajar, se suelta la cuerda a esta altura del suelo y se cae solo
     KeyUp = 32,             -- INPUT_MOVE_UP_ONLY (W)
     KeyDown = 33,           -- INPUT_MOVE_DOWN_ONLY (S)
+
+    -- Bajada rápida: mantener Shift mientras se baja con S.
+    KeySlide = 21,          -- INPUT_SPRINT (Shift)
+    SlideSpeed = 6.0,       -- m/s deslizándose
+
+    -- Salto contra la pared: Espacio, parado o moviéndose.
+    KeyJump = 22,           -- INPUT_JUMP (Espacio)
+    JumpDrop = 3.0,         -- metros que baja en cada salto
+    JumpOut = 0.9,          -- metros que se separa de la pared en el punto más alejado
+    JumpTime = 900,         -- duración del salto (ms)
+
+    -- Soltarse a mano: F, solo si quedan como mucho estos metros hasta el suelo.
+    KeyRelease = 23,        -- INPUT_ENTER (F)
+    ManualReleaseHeight = 3.0,
 }
 
 ---------------------------------------------------------------------------
@@ -58,6 +72,12 @@ Config.Anims = {
     Idle = { dict = 'missrappel', name = 'rappel_idle', flag = 2, blend = 4.0 },
     -- Subiendo/bajando: piernas caminando contra la pared.
     Move = { dict = 'missrappel', name = 'rappel_walk', flag = 1, blend = 7.0 },
+    -- Bajada rápida (Shift + S).
+    Slide = { dict = 'missrappel', name = 'rope_slide', flag = 1, blend = 5.0 },
+    -- Salto contra la pared (Espacio).
+    Jump = { dict = 'missrappel', name = 'rappel_jump_c', flag = 2, blend = 4.0 },
+    -- Desenganche al llegar abajo.
+    Dismount = { dict = 'missheistfbi3b_ig9', name = 'rappel_dismount_franklin', flag = 0, blend = 5.0 },
 }
 
 ---------------------------------------------------------------------------
@@ -75,5 +95,5 @@ Config.Text = {
     NoLedge = 'No se encuentra un punto de anclaje en la parte superior.',
     CantNow = 'No puedes usar la cuerda ahora mismo.',
     NoItem = 'No tienes una cuerda con arnés.',
-    Help = '~INPUT_MOVE_UP_ONLY~ Subir  ~INPUT_MOVE_DOWN_ONLY~ Bajar',
+    Help = '~INPUT_MOVE_UP_ONLY~ Subir  ~INPUT_MOVE_DOWN_ONLY~ Bajar  ~INPUT_SPRINT~ + ~INPUT_MOVE_DOWN_ONLY~ Deslizarse  ~INPUT_JUMP~ Saltar  ~INPUT_ENTER~ Soltarse (cerca del suelo)',
 }

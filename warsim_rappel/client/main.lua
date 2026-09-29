@@ -108,6 +108,10 @@ local function stopRappel(how)
     end
 
     releasePed(ped)
+    if how == 'drop' then
+        -- Desenganche: el personaje se suelta de la cuerda al caer al suelo.
+        playAnim(ped, anims.Dismount)
+    end
     TriggerServerEvent('warsim_rappel:stop')
 end
 
@@ -119,6 +123,10 @@ local function setState(ped, r, state)
     r.state = state
     if state == 'move' then
         playAnim(ped, anims.Move)
+    elseif state == 'slide' then
+        playAnim(ped, anims.Slide)
+    elseif state == 'jump' then
+        playAnim(ped, anims.Jump)
     elseif state == 'idle' then
         playAnim(ped, anims.Idle)
     elseif state == 'armed' then
@@ -155,8 +163,39 @@ local function controlLoop()
         local dir = 0
         if up and not down then dir = 1 elseif down and not up then dir = -1 end
         local armed = GetSelectedPedWeapon(ped) ~= UNARMED
+        local out = 0.0 -- separación extra de la pared (saltos)
 
-        if dir ~= 0 then
+        -- Soltarse a mano (F) si queda poca altura hasta el suelo.
+        if IsDisabledControlJustPressed(0, mv.KeyRelease) and not r.jump
+            and r.z - r.bottomZ - mv.PedRootOffset <= mv.ManualReleaseHeight then
+            stopRappel('drop')
+            break
+        end
+
+        -- Salto contra la pared (Espacio): impulso hacia fuera y caída de JumpDrop metros.
+        if not r.jump and not armed and IsDisabledControlJustPressed(0, mv.KeyJump)
+            and r.z - mv.JumpDrop > r.minZ then
+            r.jump = { t0 = GetGameTimer(), fromZ = r.z }
+            setState(ped, r, 'jump')
+        end
+
+        if r.jump then
+            DisablePlayerFiring(PlayerId(), true)
+            local p = (GetGameTimer() - r.jump.t0) / mv.JumpTime
+            if p >= 1.0 then
+                r.z = r.jump.fromZ - mv.JumpDrop
+                r.jump = nil
+                setState(ped, r, 'idle')
+            else
+                r.z = r.jump.fromZ - mv.JumpDrop * p
+                out = math.sin(math.pi * p) * mv.JumpOut
+            end
+            -- Si el salto llega al suelo antes de lo previsto, soltarse ahí.
+            if Detection.GroundBelow(vector3(r.x, r.y, r.z), mv.PedRootOffset + mv.ReleaseHeight + 0.1, ped) then
+                stopRappel('drop')
+                break
+            end
+        elseif dir ~= 0 then
             -- En movimiento: las dos manos en la cuerda, sin armas.
             DisableControlAction(0, 24, true)  -- disparar
             DisableControlAction(0, 25, true)  -- apuntar
@@ -168,7 +207,9 @@ local function controlLoop()
                 armed = false
             end
 
-            local speed = dir > 0 and mv.AscendSpeed or mv.DescendSpeed
+            -- Shift + S: bajada rápida deslizándose por la cuerda.
+            local sliding = dir < 0 and IsDisabledControlPressed(0, mv.KeySlide)
+            local speed = dir > 0 and mv.AscendSpeed or (sliding and mv.SlideSpeed or mv.DescendSpeed)
             r.z = r.z + dir * speed * GetFrameTime()
 
             if dir > 0 and r.z >= r.maxZ then
@@ -190,7 +231,7 @@ local function controlLoop()
                 end
             end
 
-            setState(ped, r, 'move')
+            setState(ped, r, sliding and 'slide' or 'move')
         elseif armed then
             -- Parado con arma: sistema de armas normal, girando con la cámara.
             setState(ped, r, 'armed')
@@ -199,7 +240,7 @@ local function controlLoop()
         end
 
         -- Sin gravedad el ped no cae; se le recoloca en la cuerda cada fotograma.
-        setRoot(ped, r.x, r.y, r.z)
+        setRoot(ped, r.x + r.nx * out, r.y + r.ny * out, r.z)
         if r.state == 'armed' then
             SetEntityHeading(ped, GetGameplayCamRot(2).z)
         else
@@ -235,6 +276,8 @@ local function startRappel(data)
         minZ = minZ,
         maxZ = maxZ,
         heading = heading,
+        nx = n.x,
+        ny = n.y,
         topExit = data.topStand,
         bottomZ = data.bottomZ,
         startPos = GetEntityCoords(ped),

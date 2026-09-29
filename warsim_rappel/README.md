@@ -33,6 +33,9 @@ No hay restricción de rango: cualquier jugador que tenga el objeto puede usarlo
 | Superficie no válida | Se avisa al jugador y el objeto **no** se consume. |
 | Superficie válida | Animación de enganche → el servidor comprueba que el jugador sigue teniendo el objeto, lo consume y empieza el rappel. |
 | **W** / **S** | Subir / bajar. Al soltar, el jugador se queda parado en ese punto de la cuerda. |
+| **Shift + S** | Bajada rápida deslizándose por la cuerda (`rope_slide`). |
+| **Espacio** | Salto contra la pared: se separa y baja 3 m de golpe (`rappel_jump_c`). |
+| **F** | Soltarse a mano, solo si quedan 3 m o menos hasta el suelo. |
 | Llegar arriba o abajo del todo | El rappel termina solo: arriba el jugador queda de pie en la cornisa; abajo suelta la cuerda a 1 m del suelo (`ReleaseHeight`) y cae solo. Si algo falla y atraviesa el suelo, vuelve al punto donde usó la cuerda. |
 | Parado en la cuerda | Puede sacar el arma y disparar con el sistema de armas normal. Al moverse se guarda el arma. |
 
