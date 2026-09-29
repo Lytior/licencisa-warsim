@@ -58,6 +58,22 @@ Config.Movement = {
     -- Soltarse a mano: F, solo si quedan como mucho estos metros hasta el suelo.
     KeyRelease = 23,        -- INPUT_ENTER (F)
     ManualReleaseHeight = 3.0,
+
+    -- Con arma: tras dejar de apuntar/disparar, ms que se mantiene la pose de apuntar
+    -- antes de volver a la postura de colgar (evita parpadeos entre ráfagas).
+    AimHold = 700,
+}
+
+---------------------------------------------------------------------------
+-- Boca abajo (PROTOTIPO): G estando parado. Sin animación propia se ve la postura de
+-- colgar girada; para que parezca colgado de los pies hace falta una animación de Blender.
+---------------------------------------------------------------------------
+Config.Invert = {
+    Enabled = true,
+    Key = 47,                           -- INPUT_DETONATE (G)
+    CarrierModel = `prop_golf_ball`,    -- objeto invisible al que se engancha para girarlo
+    Rot = vector3(0.0, 180.0, 0.0),     -- 180° sobre el eje de delante: boca abajo mirando a la pared
+    OffsetZ = 0.0,                      -- ajuste de altura al girarlo
 }
 
 ---------------------------------------------------------------------------
@@ -95,5 +111,5 @@ Config.Text = {
     NoLedge = 'No se encuentra un punto de anclaje en la parte superior.',
     CantNow = 'No puedes usar la cuerda ahora mismo.',
     NoItem = 'No tienes una cuerda con arnés.',
-    Help = '~INPUT_MOVE_UP_ONLY~ Subir  ~INPUT_MOVE_DOWN_ONLY~ Bajar  ~INPUT_SPRINT~ + ~INPUT_MOVE_DOWN_ONLY~ Deslizarse  ~INPUT_JUMP~ Saltar  ~INPUT_ENTER~ Soltarse (cerca del suelo)',
+    Help = '~INPUT_MOVE_UP_ONLY~ Subir  ~INPUT_MOVE_DOWN_ONLY~ Bajar  ~INPUT_SPRINT~ + ~INPUT_MOVE_DOWN_ONLY~ Deslizarse  ~INPUT_JUMP~ Saltar  ~INPUT_ENTER~ Soltarse (cerca del suelo)  ~INPUT_DETONATE~ Boca abajo',
 }

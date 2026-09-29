@@ -36,8 +36,9 @@ No hay restricción de rango: cualquier jugador que tenga el objeto puede usarlo
 | **Shift + S** | Bajada rápida deslizándose por la cuerda (`rope_slide`). |
 | **Espacio** | Salto contra la pared: se separa y baja 3 m de golpe (`rappel_jump_c`). |
 | **F** | Soltarse a mano, solo si quedan 3 m o menos hasta el suelo. |
+| **G** (parado) | **Boca abajo** (prototipo): el personaje se gira 180° mirando a la pared. Al moverse, saltar o volver a pulsar G se pone derecho. |
 | Llegar arriba o abajo del todo | El rappel termina solo: arriba el jugador queda de pie en la cornisa; abajo suelta la cuerda a 1 m del suelo (`ReleaseHeight`) y cae solo. Si algo falla y atraviesa el suelo, vuelve al punto donde usó la cuerda. |
-| Parado en la cuerda | Puede sacar el arma y disparar con el sistema de armas normal. Al moverse se guarda el arma. |
+| Parado en la cuerda | Puede sacar el arma y sigue en postura de colgar con el arma en la mano. Solo mientras apunta o dispara pasa a la pose de apuntar del juego (de pie), y vuelve a colgar al dejar de apuntar. Al moverse se guarda el arma. |
 
 ### Detección de superficie (`client/detection.lua`)
 
@@ -56,7 +57,8 @@ El servidor avisa a todos los clientes de quién está en rappel y dónde está 
 
 - **Animaciones:** `missrappel` → `rappel_idle` (parado) y `rappel_walk` (subiendo o bajando), y `mp_common_heist` → `rappel_intro` al engancharse desde arriba. Se cambian en `config.lua` sin tocar código. Mientras está en la cuerda, al personaje se le quita la gravedad (`SetPedGravity`) en lugar de congelarlo: congelar a un ped y moverlo cada fotograma lo deja en pose T.
 - **Torre de entrenamiento:** si la torre es un prop/ymap y no se detecta, revisa `Config.Detection.Flags` (por defecto mundo + objetos).
-- **Disparo en parado:** mientras el jugador tiene el arma en la mano, se quita la animación de colgar para que funcione el sistema de armas normal, y el personaje gira con la cámara para poder apuntar alrededor. Al guardar el arma vuelve a agarrarse a la cuerda. GTA no tiene una animación nativa de colgar con una mano y disparar con la otra.
+- **Disparo en parado:** con el arma en la mano se mantiene la postura de colgar; solo mientras se apunta o dispara (y `AimHold` ms después) se pasa a la pose de apuntar del juego, que es de pie. Para apuntar con las piernas en la pared hace falta una animación propia (Blender/Sollumz) que solo mueva las piernas.
+- **Boca abajo (prototipo):** para girar al personaje se engancha a un objeto invisible con rotación (`Config.Invert.Rot`), porque GTA mantiene a los peds siempre derechos. Sin animación propia se ve la postura de colgar girada. Disparar boca abajo está sin probar: la pose de apuntar del juego está pensada para ir de pie.
 
 ## Fuera de alcance (MVP)
 

@@ -57,6 +57,51 @@ local function releasePed(ped)
 end
 
 ---------------------------------------------------------------------------
+-- Boca abajo (prototipo): GTA mantiene a los peds siempre derechos, así que para girarlo
+-- se engancha a un objeto invisible con la rotación de Config.Invert.Rot.
+---------------------------------------------------------------------------
+local inv = Config.Invert
+
+local function loadModel(model)
+    if HasModelLoaded(model) then return true end
+    RequestModel(model)
+    local t = GetGameTimer()
+    while not HasModelLoaded(model) do
+        if GetGameTimer() - t > 3000 then return false end
+        Wait(0)
+    end
+    return true
+end
+
+local function setInverted(ped, r, on)
+    if on == (r.inverter ~= nil) then return end
+    if on then
+        if not loadModel(inv.CarrierModel) then
+            debug('no se pudo cargar el objeto para ponerse boca abajo')
+            return
+        end
+        local obj = CreateObject(inv.CarrierModel, r.x, r.y, r.z + inv.OffsetZ, true, true, false)
+        SetModelAsNoLongerNeeded(inv.CarrierModel)
+        SetEntityVisible(obj, false, false)
+        SetEntityCollision(obj, false, false)
+        FreezeEntityPosition(obj, true)
+        SetEntityHeading(obj, r.heading)
+        AttachEntityToEntity(ped, obj, 0, 0.0, 0.0, 0.0, inv.Rot.x, inv.Rot.y, inv.Rot.z,
+            false, false, false, false, 2, true)
+        r.inverter = obj
+        debug('boca abajo')
+    else
+        -- Soltar CON colisión: con false el personaje atravesaría el suelo después.
+        DetachEntity(ped, true, true)
+        SetEntityCollision(ped, true, true)
+        if DoesEntityExist(r.inverter) then DeleteEntity(r.inverter) end
+        r.inverter = nil
+        debug('boca arriba')
+    end
+    r.state = nil -- volver a poner la animación que toque
+end
+
+---------------------------------------------------------------------------
 -- Fin del rappel
 ---------------------------------------------------------------------------
 
@@ -94,6 +139,7 @@ local function stopRappel(how)
     local ped = PlayerPedId()
     rappel = nil
     debug('fin del rappel: ' .. tostring(how))
+    if r.inverter then setInverted(ped, r, false) end
 
     if how == 'top' then
         local e = r.topExit
@@ -129,8 +175,9 @@ local function setState(ped, r, state)
         playAnim(ped, anims.Jump)
     elseif state == 'idle' then
         playAnim(ped, anims.Idle)
-    elseif state == 'armed' then
-        -- La animación de colgar ocupa todo el cuerpo y bloquea la tarea de apuntar.
+    elseif state == 'aim' then
+        -- Apuntando: la animación de colgar ocupa todo el cuerpo y bloquea la tarea de
+        -- apuntar, así que se quita solo mientras se apunta o dispara.
         ClearPedTasks(ped)
     end
 end
@@ -157,6 +204,7 @@ local function controlLoop()
         DisableControlAction(0, 23, true)  -- entrar en vehículo
         DisableControlAction(0, 36, true)  -- agacharse
         DisableControlAction(0, 44, true)  -- cobertura
+        if inv.Enabled then DisableControlAction(0, inv.Key, true) end
 
         local up = IsDisabledControlPressed(0, mv.KeyUp)
         local down = IsDisabledControlPressed(0, mv.KeyDown)
@@ -164,6 +212,14 @@ local function controlLoop()
         if up and not down then dir = 1 elseif down and not up then dir = -1 end
         local armed = GetSelectedPedWeapon(ped) ~= UNARMED
         local out = 0.0 -- separación extra de la pared (saltos)
+
+        -- Boca abajo: solo parado. Al moverse, saltar o soltarse vuelve a ponerse derecho.
+        if inv.Enabled and not r.jump and dir == 0
+            and IsDisabledControlJustPressed(0, inv.Key) then
+            setInverted(ped, r, not r.inverter)
+        elseif r.inverter and (dir ~= 0 or IsDisabledControlJustPressed(0, mv.KeyJump)) then
+            setInverted(ped, r, false)
+        end
 
         -- Soltarse a mano (F) si queda poca altura hasta el suelo.
         if IsDisabledControlJustPressed(0, mv.KeyRelease) and not r.jump
@@ -232,19 +288,28 @@ local function controlLoop()
             end
 
             setState(ped, r, sliding and 'slide' or 'move')
-        elseif armed then
-            -- Parado con arma: sistema de armas normal, girando con la cámara.
-            setState(ped, r, 'armed')
         else
-            setState(ped, r, 'idle')
+            -- Parado. Con el arma en la mano se mantiene la postura de colgar y solo se
+            -- pasa a la pose de apuntar mientras se apunta o dispara (y AimHold ms después).
+            if armed and (IsControlPressed(0, 25) or IsControlPressed(0, 24)
+                or IsPlayerFreeAiming(PlayerId())) then
+                r.aimUntil = GetGameTimer() + mv.AimHold
+            end
+            if armed and GetGameTimer() < (r.aimUntil or 0) then
+                setState(ped, r, 'aim')
+            else
+                setState(ped, r, 'idle')
+            end
         end
 
-        -- Sin gravedad el ped no cae; se le recoloca en la cuerda cada fotograma.
-        setRoot(ped, r.x + r.nx * out, r.y + r.ny * out, r.z)
-        if r.state == 'armed' then
-            SetEntityHeading(ped, GetGameplayCamRot(2).z)
+        local heading = r.state == 'aim' and GetGameplayCamRot(2).z or r.heading
+        if r.inverter then
+            -- Boca abajo: lo que se orienta es el objeto al que va enganchado.
+            SetEntityHeading(r.inverter, heading)
         else
-            SetEntityHeading(ped, r.heading)
+            -- Sin gravedad el ped no cae; se le recoloca en la cuerda cada fotograma.
+            setRoot(ped, r.x + r.nx * out, r.y + r.ny * out, r.z)
+            SetEntityHeading(ped, heading)
         end
 
         BeginTextCommandDisplayHelp('STRING')
