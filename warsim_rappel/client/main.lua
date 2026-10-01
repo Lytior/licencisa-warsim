@@ -395,9 +395,24 @@ local function controlLoop()
             -- Sin gravedad el ped no cae; se le recoloca en la cuerda cada fotograma.
             local expected = vector3(r.x + r.nx * out, r.y + r.ny * out, r.z)
             local actual = GetEntityCoords(ped)
-            if #(actual - expected) > 3.0 then
-                debug(('desplazamiento inesperado de %.1f m (algo empujó al personaje), recolocando')
-                    :format(#(actual - expected)))
+            local drift = #(actual - expected)
+            if drift > 3.0 then
+                -- Algo está lanzando al personaje (la física de la cuerda, normalmente). Tras
+                -- varios fotogramas seguidos se quita la cuerda visual de este jugador: el
+                -- rappel sigue igual y deja de pelearse con la física.
+                r.drifts = (r.drifts or 0) + 1
+                local now = GetGameTimer()
+                if now - (r.driftLog or 0) > 1000 then
+                    r.driftLog = now
+                    debug(('desplazamiento inesperado de %.1f m (en %.1f, %.1f, %.1f), recolocando')
+                        :format(drift, actual.x, actual.y, actual.z))
+                end
+                if r.drifts == mv.MaxDrifts then
+                    debug('la cuerda está empujando al personaje: se quita la cuerda visual')
+                    Ropes.Remove(GetPlayerServerId(PlayerId()))
+                end
+            else
+                r.drifts = 0
             end
             setRoot(ped, expected.x, expected.y, expected.z)
             SetEntityHeading(ped, heading)

@@ -73,6 +73,10 @@ Config.Movement = {
     -- Con arma: tras dejar de apuntar/disparar, ms que se mantiene la pose de apuntar
     -- antes de volver a la postura de colgar (evita parpadeos entre ráfagas).
     AimHold = 700,
+
+    -- Si algo desplaza al personaje más de 3 m durante estos fotogramas seguidos, se quita
+    -- la cuerda visual (seguro contra la física de la cuerda).
+    MaxDrifts = 3,
 }
 
 ---------------------------------------------------------------------------
@@ -114,7 +118,10 @@ Config.Rope = {
     Enabled = true,
     Type = 4,               -- tipo de cuerda nativo (4 = cuerda fina)
     AnchorModel = `prop_golf_ball`, -- prop invisible que hace de punto de anclaje
-    Collision = true,       -- la cuerda choca con edificios y objetos en vez de atravesarlos
+    -- Colisión de la cuerda: DESACTIVADA. Enganchada a la mano, la cuerda choca con el propio
+    -- cuerpo del personaje y lo lanza cientos de metros en cada fotograma. El mod de
+    -- referencia también la usa sin colisión.
+    Collision = false,
     ChangeRate = 20.0,      -- m/s que puede recogerse/soltarse (debe superar la bajada rápida)
     MinLength = 0.5,        -- longitud mínima (m)
     AnchorHeight = 0.3,     -- altura (m) del anclaje por encima del borde

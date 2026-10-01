@@ -64,6 +64,7 @@ El servidor avisa a todos los clientes de quién está en rappel y dónde está 
 ## Notas técnicas
 
 - **Cuerda:** va del anclaje (encima del jugador, por fuera de la cornisa) a su mano izquierda. Cada fotograma se ajusta su longitud a la distancia real, recogiéndola al subir y soltándola al bajar, con una velocidad de cambio (`ChangeRate`) mayor que la de la bajada rápida. Al acabar el rappel se borra antes de devolver la gravedad al jugador, para que nunca pueda tirar de él.
+- **Sin colisión en la cuerda:** enganchada a la mano, una cuerda con colisión choca con el propio personaje y lo lanza cientos de metros. Si aun así algo desplaza al personaje varios fotogramas seguidos, se quita su cuerda visual y el rappel sigue normal (en F8: `la cuerda está empujando al personaje`).
 - **Al subir**, si hay un balcón o saliente encima de la cabeza, el jugador se detiene en vez de atravesarlo.
 - **Detección desde abajo:** un hueco en la pared con techo encima (ventana) no se toma por la azotea; se sigue subiendo hasta el borde real.
 
