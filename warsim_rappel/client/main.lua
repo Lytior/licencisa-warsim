@@ -193,6 +193,7 @@ local function tryClimb(ped, r)
     end
 
     if mv.ClimbMode == 'task' then
+        Ropes.Remove(GetPlayerServerId(PlayerId()))
         ClearPedTasksImmediately(ped)
         SetEntityHeading(ped, r.heading)
         TaskClimb(ped, false)
@@ -207,6 +208,8 @@ local function tryClimb(ped, r)
     end
 
     debug(('subiendo a la cornisa en %.2f, %.2f, %.2f'):format(spot.x, spot.y, spot.z))
+    -- Borrar la cuerda ANTES de mover al jugador: enganchada a él podría tirar al recolocarlo.
+    Ropes.Remove(GetPlayerServerId(PlayerId()))
     ClearPedTasksImmediately(ped)
     FreezeEntityPosition(ped, true)
     RequestCollisionAtCoord(spot.x, spot.y, spot.z)
@@ -448,10 +451,11 @@ local function startRappel(data)
     CreateThread(controlLoop)
 end
 
--- Punto de anclaje de la cuerda: en el borde superior de la pared.
+-- Punto de anclaje de la cuerda: justo encima de donde cuelga el jugador (a WallOffset de la
+-- pared) y un poco por encima del borde, para que la cuerda baje recta sin rozar la cornisa.
 local function anchorFor(data)
-    local a = data.wall + data.normal * 0.05
-    return vector3(a.x, a.y, data.topZ + 0.1)
+    local a = data.wall + data.normal * mv.WallOffset
+    return vector3(a.x, a.y, data.topZ + Config.Rope.AnchorHeight)
 end
 
 ---------------------------------------------------------------------------

@@ -115,6 +115,9 @@ Config.Rope = {
     Type = 4,               -- tipo de cuerda nativo (4 = cuerda fina)
     AnchorModel = `prop_golf_ball`, -- prop invisible que hace de punto de anclaje
     Collision = true,       -- la cuerda choca con edificios y objetos en vez de atravesarlos
+    ChangeRate = 20.0,      -- m/s que puede recogerse/soltarse (debe superar la bajada rápida)
+    MinLength = 0.5,        -- longitud mínima (m)
+    AnchorHeight = 0.3,     -- altura (m) del anclaje por encima del borde
 }
 
 Config.Text = {
