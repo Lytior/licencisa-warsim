@@ -1,19 +1,38 @@
 -- Cuerda visual. El servidor reparte a todos los clientes qué jugadores están en rappel y
 -- dónde está su anclaje; cada cliente dibuja la cuerda solo si ese jugador está en su rango.
+--
+-- La cuerda NO se engancha al ped: va de un objeto invisible en el borde a otro objeto
+-- invisible pegado a la mano izquierda. Una cuerda con física tira de lo que lleva
+-- enganchado; enganchada al ped podía lanzarlo fuera del mapa al subir a la cornisa.
 
 Ropes = {}
 
-local active = {} -- [serverId] = { anchor = vector3, rope = int?, obj = int? }
+local active = {} -- [serverId] = { anchor = vector3, rope, obj, hand }
+
+local HAND_BONE = 36029 -- SKEL_L_Hand
+
+local function deleteEntity(ent)
+    if ent and DoesEntityExist(ent) then
+        DetachEntity(ent, false, false)
+        DeleteEntity(ent)
+    end
+end
 
 local function destroy(entry)
     if entry.rope then
         DeleteRope(entry.rope)
         entry.rope = nil
     end
-    if entry.obj and DoesEntityExist(entry.obj) then
-        DeleteEntity(entry.obj)
-    end
-    entry.obj = nil
+    deleteEntity(entry.obj)
+    deleteEntity(entry.hand)
+    entry.obj, entry.hand = nil, nil
+end
+
+local function spawnHidden(model, pos)
+    local obj = CreateObjectNoOffset(model, pos.x, pos.y, pos.z, false, false, false)
+    SetEntityVisible(obj, false, false)
+    SetEntityCollision(obj, false, false)
+    return obj
 end
 
 local function create(entry, ped)
@@ -23,28 +42,29 @@ local function create(entry, ped)
     while not HasModelLoaded(model) and GetGameTimer() - t < 2000 do Wait(0) end
     RopeLoadTextures()
     while not RopeAreTexturesLoaded() and GetGameTimer() - t < 4000 do Wait(0) end
-    if not HasModelLoaded(model) then return end
+    if not HasModelLoaded(model) or not DoesEntityExist(ped) then return end
 
     local a = entry.anchor
-    local obj = CreateObjectNoOffset(model, a.x, a.y, a.z, false, false, false)
-    SetModelAsNoLongerNeeded(model)
+    local obj = spawnHidden(model, a)
     FreezeEntityPosition(obj, true)
-    SetEntityVisible(obj, false, false)
-    SetEntityCollision(obj, false, false)
 
-    -- La cuerda sale de la mano izquierda (SKEL_L_Hand).
-    local p = GetPedBoneCoords(ped, 36029, 0.0, 0.0, 0.0)
+    -- Objeto pegado a la mano: es el otro extremo de la cuerda. Al ir enganchado al hueso
+    -- no tiene física propia y la cuerda no puede empujar al ped a través de él.
+    local p = GetPedBoneCoords(ped, HAND_BONE, 0.0, 0.0, 0.0)
+    local hand = spawnHidden(model, p)
+    AttachEntityToEntity(hand, ped, GetPedBoneIndex(ped, HAND_BONE), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        false, false, false, false, 2, true)
+    SetModelAsNoLongerNeeded(model)
+
     local length = #(a - p)
     -- ADD_ROPE(pos, rot, maxLength, ropeType, initLength, minLength, lengthChangeRate,
     --          ppuOnly, collisionOn, lockFromFront, timeMultiplier, breakable, unk)
-    -- Antes iban cambiados maxLength e initLength: la cuerda nacía con 85 m y cruzaba la calle.
     local rope = AddRope(a.x, a.y, a.z, 0.0, 0.0, 0.0, Config.Detection.MaxHeight + 5.0, Config.Rope.Type,
         length, 0.5, 1.0, false, Config.Rope.Collision, false, 1.0, false, 0)
     ActivatePhysics(rope)
-    AttachEntitiesToRope(rope, obj, ped, a.x, a.y, a.z, p.x, p.y, p.z, length, false, false, nil, nil)
+    AttachEntitiesToRope(rope, obj, hand, a.x, a.y, a.z, p.x, p.y, p.z, length, false, false, nil, nil)
 
-    entry.obj = obj
-    entry.rope = rope
+    entry.obj, entry.hand, entry.rope = obj, hand, rope
 end
 
 function Ropes.Add(serverId, anchor)
@@ -77,8 +97,8 @@ CreateThread(function()
                     -- Si se quitó mientras se cargaba, limpiar lo recién creado.
                     if active[serverId] ~= entry then destroy(entry) end
                 end
-                if entry.rope then
-                    RopeForceLength(entry.rope, #(entry.anchor - GetPedBoneCoords(ped, 36029, 0.0, 0.0, 0.0)))
+                if entry.rope and entry.hand and DoesEntityExist(entry.hand) then
+                    RopeForceLength(entry.rope, #(entry.anchor - GetEntityCoords(entry.hand)))
                     sleep = 0
                 end
             elseif entry.rope then

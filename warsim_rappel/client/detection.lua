@@ -34,6 +34,7 @@ local function groundBelow(pos, depth, ped)
 end
 
 Detection.GroundBelow = groundBelow
+Detection.Raycast = raycast
 
 -- Busca, subiendo por la pared, el borde superior y la cornisa donde se puede pisar.
 local function findLedge(wall, normal, fromZ, ped)
@@ -48,10 +49,14 @@ local function findLedge(wall, normal, fromZ, ped)
             local inside = wall - normal * cfg.LedgeInset
             local top = vector3(inside.x, inside.y, z + 1.0)
             local ledgeHit, ledge, ledgeNormal = raycast(top, top - vector3(0.0, 0.0, cfg.ScanStep * 2 + 1.5), ped)
+            -- Solo es la azotea si hay suelo plano detrás y nada encima. Si hay techo, o no
+            -- hay suelo cerca, es una ventana o un hueco en la pared: seguir subiendo.
             if ledgeHit and ledgeNormal.z > 0.7 then
-                return ledge
+                local feet = ledge + vector3(0.0, 0.0, 0.2)
+                if not raycast(feet, feet + vector3(0.0, 0.0, 2.5), ped) then
+                    return ledge
+                end
             end
-            return nil
         end
     end
     return nil

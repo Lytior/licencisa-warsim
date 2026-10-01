@@ -37,7 +37,7 @@ No hay restricción de rango: cualquier jugador que tenga el objeto puede usarlo
 | **Espacio** | Salto contra la pared: se separa y baja 3 m de golpe (`rappel_jump_c`). |
 | **F** | Arriba del todo: subir a la cornisa. Cerca del suelo (3 m o menos): soltarse. |
 | **G** (parado) | **Boca abajo** (prototipo): el personaje se gira 180° mirando a la pared. Al moverse, saltar o volver a pulsar G se pone derecho. |
-| Llegar arriba del todo | Se queda colgado bajo el borde. Con **F** trepa a la cornisa con la animación del juego (sin teletransporte). |
+| Llegar arriba del todo | Se queda colgado bajo el borde. Con **F** sube a la cornisa: el script busca un sitio de la azotea con suelo plano y espacio libre y le coloca ahí. Si no hay, sigue colgado y le avisa. |
 | Llegar abajo del todo | Suelta la cuerda a 1 m del suelo (`ReleaseHeight`) y cae solo. Si algo falla y atraviesa el suelo, vuelve al punto donde usó la cuerda. |
 | Parado en la cuerda | Puede sacar el arma y sigue en postura de colgar con el arma en la mano. Solo mientras apunta o dispara pasa a la pose de apuntar del juego (de pie), y vuelve a colgar al dejar de apuntar. Al moverse se guarda el arma. |
 
@@ -60,6 +60,12 @@ El servidor avisa a todos los clientes de quién está en rappel y dónde está 
 - **Torre de entrenamiento:** si la torre es un prop/ymap y no se detecta, revisa `Config.Detection.Flags` (por defecto mundo + objetos).
 - **Disparo en parado:** con el arma en la mano se mantiene la postura de colgar; solo mientras se apunta o dispara (y `AimHold` ms después) se pasa a la pose de apuntar del juego, que es de pie. Para apuntar con las piernas en la pared hace falta una animación propia (Blender/Sollumz) que solo mueva las piernas.
 - **Boca abajo (prototipo):** para girar al personaje se engancha a un objeto invisible con rotación (`Config.Invert.Rot`), porque GTA mantiene a los peds siempre derechos. Sin animación propia se ve la postura de colgar girada. Disparar boca abajo está sin probar: la pose de apuntar del juego está pensada para ir de pie.
+
+## Notas técnicas
+
+- **La cuerda es solo visual.** Va de un objeto invisible en el borde a otro pegado a la mano; nunca se engancha al personaje, porque una cuerda con física tira de lo que lleva enganchado y podía lanzarlo fuera del mapa.
+- **Al subir**, si hay un balcón o saliente encima de la cabeza, el jugador se detiene en vez de atravesarlo.
+- **Detección desde abajo:** un hueco en la pared con techo encima (ventana) no se toma por la azotea; se sigue subiendo hasta el borde real.
 
 ## Fuera de alcance (MVP)
 

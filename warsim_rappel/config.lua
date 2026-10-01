@@ -63,7 +63,12 @@ Config.Movement = {
     -- ManualReleaseHeight metros) se suelta de la cuerda.
     KeyRelease = 23,        -- INPUT_ENTER (F)
     ManualReleaseHeight = 3.0,
-    ClimbTimeout = 1500,    -- ms que se espera a que empiece a trepar antes del plan B
+    -- Subir a la cornisa: 'place' coloca al jugador en un sitio comprobado de la azotea
+    -- (recomendado); 'task' intenta antes la trepada del juego (TASK_CLIMB).
+    ClimbMode = 'place',
+    ClimbTimeout = 1500,    -- ms que se espera a que empiece a trepar (solo 'task')
+    LedgeInsets = { 1.0, 1.5, 2.0, 0.6 }, -- distancias (m) tras la pared donde buscar suelo (no encima de un murete)
+    HeadOffset = 0.8,       -- altura de la cabeza sobre el origen del ped (choques al subir)
 
     -- Con arma: tras dejar de apuntar/disparar, ms que se mantiene la pose de apuntar
     -- antes de volver a la postura de colgar (evita parpadeos entre ráfagas).

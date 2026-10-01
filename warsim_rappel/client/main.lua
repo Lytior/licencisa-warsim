@@ -112,7 +112,9 @@ local function watchFall(ped, groundZ, safePos)
         local t = GetGameTimer()
         while GetGameTimer() - t < 5000 do
             local p = GetEntityCoords(ped)
-            if p.z < groundZ - 3.0 then
+            -- Solo si está de verdad bajo el mapa: por debajo del suelo esperado y sin ningún
+            -- suelo debajo. Caer a un tejado más bajo o a la calle no cuenta.
+            if p.z < groundZ - 3.0 and not Detection.Raycast(p, p - vector3(0.0, 0.0, 150.0), ped) then
                 debug(('ha atravesado el suelo (z %.2f, suelo %.2f): vuelta al punto de inicio'):format(p.z, groundZ))
                 FreezeEntityPosition(ped, true)
                 SetEntityCoords(ped, safePos.x, safePos.y, safePos.z - mv.PedRootOffset, true, true, true, false)
@@ -139,10 +141,12 @@ local function stopRappel(how)
     local ped = PlayerPedId()
     rappel = nil
     debug('fin del rappel: ' .. tostring(how))
+    -- Quitar la cuerda ya en este cliente, sin esperar a la vuelta del servidor.
+    Ropes.Remove(GetPlayerServerId(PlayerId()))
     if r.inverter then setInverted(ped, r, false) end
 
     if how == 'climb' then
-        -- Está trepando a la cornisa: no se le quitan las tareas para no cortar la trepada.
+        -- Ya está colocado en la cornisa (o trepando): no se le cortan las tareas.
         SetPedGravity(ped, true)
         SetPedCanRagdoll(ped, true)
         watchFall(ped, r.topZ, r.startPos)
@@ -161,34 +165,62 @@ local function stopRappel(how)
     TriggerServerEvent('warsim_rappel:stop')
 end
 
--- Arriba del todo + F: trepar a la cornisa con la animación del juego (TASK_CLIMB), igual
--- que el mod de referencia, en vez de teletransportar. Plan B si no empieza a trepar:
--- colocarlo sobre la cornisa justo detrás de la pared. Devuelve false si no hay dónde subir.
-local function tryClimb(ped, r)
-    ClearPedTasksImmediately(ped)
-    SetEntityHeading(ped, r.heading)
-    TaskClimb(ped, false)
-    local t = GetGameTimer()
-    while GetGameTimer() - t < mv.ClimbTimeout do
-        if IsPedClimbing(ped) then
-            debug('trepando a la cornisa')
-            return true
+-- Busca dónde poner los pies en la cornisa: suelo plano a la altura del borde, justo detrás
+-- de la pared y con sitio libre encima. Devuelve nil si no hay.
+local function findLedgeSpot(ped, r)
+    for _, inset in ipairs(mv.LedgeInsets) do
+        local d = mv.WallOffset + inset
+        local probe = vector3(r.x - r.nx * d, r.y - r.ny * d, r.topZ + 2.0)
+        local hit, pos, normal = Detection.Raycast(probe, probe - vector3(0.0, 0.0, 4.0), ped)
+        if hit and normal.z > 0.7 and math.abs(pos.z - r.topZ) <= 1.5 then
+            local feet = vector3(pos.x, pos.y, pos.z + 0.2)
+            local blocked = Detection.Raycast(feet, feet + vector3(0.0, 0.0, 1.7), ped)
+            if not blocked then return pos end
         end
-        Wait(0)
+    end
+    return nil
+end
+
+-- Arriba del todo + F: subir a la cornisa. Por defecto se coloca al jugador en un sitio
+-- comprobado de la azotea (ClimbMode = 'place'); con 'task' se intenta antes la trepada
+-- del juego (TASK_CLIMB), que desde el aire es menos predecible.
+-- Devuelve false si no hay dónde subir (sigue colgado).
+local function tryClimb(ped, r)
+    local spot = findLedgeSpot(ped, r)
+    if not spot then
+        debug('no hay cornisa donde subir')
+        return false
     end
 
-    local inside = mv.WallOffset + 0.8
-    local probe = vector3(r.x - r.nx * inside, r.y - r.ny * inside, r.maxZ + 3.0)
-    local gz = Detection.GroundBelow(probe, 4.5, ped)
-    if gz then
-        debug(('no trepa: se le coloca en la cornisa (suelo %.2f)'):format(gz))
+    if mv.ClimbMode == 'task' then
         ClearPedTasksImmediately(ped)
-        SetEntityCoords(ped, probe.x, probe.y, gz + 0.05, true, true, true, false)
         SetEntityHeading(ped, r.heading)
-        return true
+        TaskClimb(ped, false)
+        local t = GetGameTimer()
+        while GetGameTimer() - t < mv.ClimbTimeout do
+            if IsPedClimbing(ped) then
+                debug('trepando a la cornisa')
+                return true
+            end
+            Wait(0)
+        end
     end
-    debug('no hay cornisa donde subir')
-    return false
+
+    debug(('subiendo a la cornisa en %.2f, %.2f, %.2f'):format(spot.x, spot.y, spot.z))
+    ClearPedTasksImmediately(ped)
+    FreezeEntityPosition(ped, true)
+    RequestCollisionAtCoord(spot.x, spot.y, spot.z)
+    -- SET_ENTITY_COORDS deja los pies en la z que recibe.
+    SetEntityCoords(ped, spot.x, spot.y, spot.z + 0.05, true, true, true, false)
+    SetEntityHeading(ped, (r.heading + 180.0) % 360.0) -- mirando hacia dentro de la azotea
+    local t = GetGameTimer()
+    while not HasCollisionLoadedAroundEntity(ped) and GetGameTimer() - t < 1500 do
+        RequestCollisionAtCoord(spot.x, spot.y, spot.z)
+        Wait(0)
+    end
+    FreezeEntityPosition(ped, false)
+    r.topZ = spot.z
+    return true
 end
 
 ---------------------------------------------------------------------------
@@ -307,7 +339,16 @@ local function controlLoop()
             -- Shift + S: bajada rápida deslizándose por la cuerda.
             local sliding = dir < 0 and IsDisabledControlPressed(0, mv.KeySlide)
             local speed = dir > 0 and mv.AscendSpeed or (sliding and mv.SlideSpeed or mv.DescendSpeed)
-            r.z = r.z + dir * speed * GetFrameTime()
+            local newZ = r.z + dir * speed * GetFrameTime()
+
+            -- Al subir: no meter la cabeza en balcones, forjados o salientes de la pared.
+            if dir > 0 and newZ < r.maxZ then
+                local head = vector3(r.x, r.y, r.z + mv.HeadOffset)
+                if Detection.Raycast(head, vector3(r.x, r.y, newZ + mv.HeadOffset + 0.15), ped) then
+                    newZ = r.z
+                end
+            end
+            r.z = newZ
 
             if dir > 0 and r.z >= r.maxZ then
                 -- Arriba del todo se queda colgado: para subir a la cornisa hay que pulsar F.
@@ -349,7 +390,13 @@ local function controlLoop()
             SetEntityHeading(r.inverter, heading)
         else
             -- Sin gravedad el ped no cae; se le recoloca en la cuerda cada fotograma.
-            setRoot(ped, r.x + r.nx * out, r.y + r.ny * out, r.z)
+            local expected = vector3(r.x + r.nx * out, r.y + r.ny * out, r.z)
+            local actual = GetEntityCoords(ped)
+            if #(actual - expected) > 3.0 then
+                debug(('desplazamiento inesperado de %.1f m (algo empujó al personaje), recolocando')
+                    :format(#(actual - expected)))
+            end
+            setRoot(ped, expected.x, expected.y, expected.z)
             SetEntityHeading(ped, heading)
         end
 
