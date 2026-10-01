@@ -116,15 +116,18 @@ Config.Anims = {
 ---------------------------------------------------------------------------
 Config.Rope = {
     Enabled = true,
-    Type = 4,               -- tipo de cuerda nativo (4 = cuerda fina)
     AnchorModel = `prop_golf_ball`, -- prop invisible que hace de punto de anclaje
-    -- Colisión de la cuerda: DESACTIVADA. Enganchada a la mano, la cuerda choca con el propio
-    -- cuerpo del personaje y lo lanza cientos de metros en cada fotograma. El mod de
-    -- referencia también la usa sin colisión.
-    Collision = false,
-    ChangeRate = 20.0,      -- m/s que puede recogerse/soltarse (debe superar la bajada rápida)
-    MinLength = 0.5,        -- longitud mínima (m)
     AnchorHeight = 0.3,     -- altura (m) del anclaje por encima del borde
+    -- Valores del mod de referencia (climbrope):
+    Type = 0,               -- tipo de cuerda nativo
+    MaxLength = 1000.0,     -- longitud máxima; la real se ajusta cada fotograma
+    MinLength = 0.25,
+    ChangeRate = 0.5,
+    LockFromFront = true,
+    HandBack = -0.07,       -- la cuerda sale 7 cm por detrás de la mano izquierda
+    -- Colisión DESACTIVADA (como en el mod): enganchada a la mano, la cuerda choca con el
+    -- propio cuerpo del personaje y lo lanza cientos de metros en cada fotograma.
+    Collision = false,
 }
 
 Config.Text = {

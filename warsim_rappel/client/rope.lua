@@ -1,9 +1,9 @@
 -- Cuerda visual. El servidor reparte a todos los clientes qué jugadores están en rappel y
 -- dónde está su anclaje; cada cliente dibuja la cuerda solo si ese jugador está en su rango.
 --
--- Física (como el mod de referencia): la cuerda va del anclaje a la mano izquierda del ped
--- y en cada fotograma se ajusta su longitud a la distancia real, recogiéndola al subir
--- (winding) y soltándola al bajar (unwinding).
+-- Física calcada del mod de referencia (climbrope): la cuerda va de la mano izquierda del ped
+-- al anclaje, sin colisión, y en cada fotograma se ajusta su longitud a la distancia real,
+-- recogiéndola al subir (winding) y soltándola al bajar (unwinding).
 -- Seguridad: la cuerda del jugador local se borra en cuanto acaba el rappel, ANTES de
 -- devolverle la gravedad, para que nunca pueda tirar de él (ver stopRappel en main.lua).
 
@@ -35,10 +35,16 @@ local function destroy(entry)
     entry.obj, entry.winding = nil, nil
 end
 
+-- Punto de la cuerda en la mano: hueso de la mano izquierda, un poco hacia atrás (como el mod).
 local function handPos(ped)
-    return GetPedBoneCoords(ped, HAND_BONE, 0.0, 0.0, 0.0)
+    return GetPedBoneCoords(ped, HAND_BONE, 0.0, 0.0, 0.0) + GetEntityForwardVector(ped) * cfg.HandBack
 end
 
+-- Creación calcada del mod de referencia (climbrope):
+--   ADD_ROPE(pos, rot, maxLength, type, initLength, minLength 0.25, changeRate 0.5,
+--            ppuOnly false, collisionOn false, lockFromFront true, timeMultiplier 1.0,
+--            breakable false), esperar 30 ms, ACTIVATE_PHYSICS y enganchar PRIMERO el ped
+--   (mano) y DESPUÉS el anclaje. La longitud real se ajusta en follow() cada fotograma.
 local function create(entry, ped)
     local model = cfg.AnchorModel
     RequestModel(model)
@@ -58,24 +64,30 @@ local function create(entry, ped)
     SetEntityVisible(obj, false, false)
     SetEntityCollision(obj, false, false)
 
-    local p = handPos(ped)
-    local length = math.max(#(a - p), cfg.MinLength)
-    -- ADD_ROPE(pos, rot, maxLength, ropeType, initLength, minLength, lengthChangeRate,
-    --          ppuOnly, collisionOn, lockFromFront, timeMultiplier, breakable, unk)
-    -- lengthChangeRate antes era 1 m/s: la cuerda no podía seguir al jugador al subir.
-    local rope = AddRope(a.x, a.y, a.z, 0.0, 0.0, 0.0, Config.Detection.MaxHeight + 5.0, cfg.Type,
-        length, cfg.MinLength, cfg.ChangeRate, false, cfg.Collision, false, 1.0, false, 0)
+    local rope = AddRope(a.x, a.y, a.z, 0.0, 0.0, 0.0, cfg.MaxLength, cfg.Type, cfg.MaxLength,
+        cfg.MinLength, cfg.ChangeRate, false, cfg.Collision, cfg.LockFromFront, 1.0, false, 0)
     if not rope or rope == 0 then
         DeleteEntity(obj)
         return
     end
+    Wait(30)
+    if not DoesEntityExist(ped) then
+        DeleteRope(rope)
+        DeleteEntity(obj)
+        return
+    end
     ActivatePhysics(rope)
-    AttachEntitiesToRope(rope, obj, ped, a.x, a.y, a.z, p.x, p.y, p.z, length, false, false, nil, nil)
+
+    local p = handPos(ped)
+    AttachEntitiesToRope(rope, ped, obj, p.x, p.y, p.z, a.x, a.y, a.z, cfg.MaxLength, false, false, nil, nil)
+    RopeForceLength(rope, math.max(#(a - p), cfg.MinLength))
 
     entry.obj, entry.rope = obj, rope
 end
 
--- Ajusta la longitud de la cuerda a la distancia anclaje → mano en este fotograma.
+-- Ajusta la longitud a la distancia anclaje → mano en este fotograma, recogiendo la cuerda
+-- al subir y soltándola al bajar (START_ROPE_WINDING / START_ROPE_UNWINDING_FRONT), igual
+-- que hace el mod mientras se pulsan W / S.
 local function follow(entry, ped)
     local target = math.max(#(entry.anchor - handPos(ped)), cfg.MinLength)
     local current = RopeGetDistanceBetweenEnds(entry.rope)
