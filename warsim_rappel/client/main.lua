@@ -131,7 +131,7 @@ local function watchFall(ped, groundZ, safePos)
 end
 
 -- how = 'drop' → abajo: suelta la cuerda a ReleaseHeight del suelo y cae con la gravedad normal.
--- how = 'top'  → arriba: queda de pie en la cornisa.
+-- how = 'climb' → arriba: está trepando a la cornisa (F), no se le cortan las tareas.
 -- how = nil    → muerte / recurso parado: solo se suelta.
 local function stopRappel(how)
     local r = rappel
@@ -141,13 +141,13 @@ local function stopRappel(how)
     debug('fin del rappel: ' .. tostring(how))
     if r.inverter then setInverted(ped, r, false) end
 
-    if how == 'top' then
-        local e = r.topExit
-        RequestCollisionAtCoord(e.x, e.y, e.z)
-        -- SET_ENTITY_COORDS con la z del suelo deja los pies sobre la cornisa.
-        SetEntityCoords(ped, e.x, e.y, e.z, true, true, true, false)
-        SetEntityHeading(ped, r.heading)
-        watchFall(ped, e.z, r.startPos)
+    if how == 'climb' then
+        -- Está trepando a la cornisa: no se le quitan las tareas para no cortar la trepada.
+        SetPedGravity(ped, true)
+        SetPedCanRagdoll(ped, true)
+        watchFall(ped, r.topZ, r.startPos)
+        TriggerServerEvent('warsim_rappel:stop')
+        return
     elseif how == 'drop' then
         RequestCollisionAtCoord(r.x, r.y, r.bottomZ)
         watchFall(ped, r.bottomZ, r.startPos)
@@ -159,6 +159,36 @@ local function stopRappel(how)
         playAnim(ped, anims.Dismount)
     end
     TriggerServerEvent('warsim_rappel:stop')
+end
+
+-- Arriba del todo + F: trepar a la cornisa con la animación del juego (TASK_CLIMB), igual
+-- que el mod de referencia, en vez de teletransportar. Plan B si no empieza a trepar:
+-- colocarlo sobre la cornisa justo detrás de la pared. Devuelve false si no hay dónde subir.
+local function tryClimb(ped, r)
+    ClearPedTasksImmediately(ped)
+    SetEntityHeading(ped, r.heading)
+    TaskClimb(ped, false)
+    local t = GetGameTimer()
+    while GetGameTimer() - t < mv.ClimbTimeout do
+        if IsPedClimbing(ped) then
+            debug('trepando a la cornisa')
+            return true
+        end
+        Wait(0)
+    end
+
+    local inside = mv.WallOffset + 0.8
+    local probe = vector3(r.x - r.nx * inside, r.y - r.ny * inside, r.maxZ + 3.0)
+    local gz = Detection.GroundBelow(probe, 4.5, ped)
+    if gz then
+        debug(('no trepa: se le coloca en la cornisa (suelo %.2f)'):format(gz))
+        ClearPedTasksImmediately(ped)
+        SetEntityCoords(ped, probe.x, probe.y, gz + 0.05, true, true, true, false)
+        SetEntityHeading(ped, r.heading)
+        return true
+    end
+    debug('no hay cornisa donde subir')
+    return false
 end
 
 ---------------------------------------------------------------------------
@@ -221,8 +251,19 @@ local function controlLoop()
             setInverted(ped, r, false)
         end
 
-        -- Soltarse a mano (F) si queda poca altura hasta el suelo.
-        if IsDisabledControlJustPressed(0, mv.KeyRelease) and not r.jump
+        local atTop = r.z >= r.maxZ - 0.05
+
+        -- F arriba del todo: subir a la cornisa.
+        if atTop and not r.jump and IsDisabledControlJustPressed(0, mv.KeyRelease) then
+            if r.inverter then setInverted(ped, r, false) end
+            if tryClimb(ped, r) then
+                stopRappel('climb')
+                break
+            end
+            notify(Config.Text.NoClimb)
+            r.state = nil
+        -- F cerca del suelo: soltarse de la cuerda.
+        elseif IsDisabledControlJustPressed(0, mv.KeyRelease) and not r.jump
             and r.z - r.bottomZ - mv.PedRootOffset <= mv.ManualReleaseHeight then
             stopRappel('drop')
             break
@@ -269,8 +310,8 @@ local function controlLoop()
             r.z = r.z + dir * speed * GetFrameTime()
 
             if dir > 0 and r.z >= r.maxZ then
-                stopRappel('top')
-                break
+                -- Arriba del todo se queda colgado: para subir a la cornisa hay que pulsar F.
+                r.z = r.maxZ
             elseif dir < 0 and r.z <= r.minZ then
                 stopRappel('drop')
                 break
@@ -313,7 +354,7 @@ local function controlLoop()
         end
 
         BeginTextCommandDisplayHelp('STRING')
-        AddTextComponentSubstringPlayerName(Config.Text.Help)
+        AddTextComponentSubstringPlayerName(atTop and Config.Text.HelpTop or Config.Text.Help)
         EndTextCommandDisplayHelp(0, false, false, -1)
 
         Wait(0)
@@ -343,7 +384,7 @@ local function startRappel(data)
         heading = heading,
         nx = n.x,
         ny = n.y,
-        topExit = data.topStand,
+        topZ = data.topZ,
         bottomZ = data.bottomZ,
         startPos = GetEntityCoords(ped),
         state = nil,

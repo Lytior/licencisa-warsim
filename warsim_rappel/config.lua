@@ -28,6 +28,10 @@ Config.Detection = {
     ScanStep = 0.5,
     -- Profundidad (m) hacia dentro del edificio donde se busca la cornisa/azotea.
     LedgeInset = 0.8,
+    -- Desde arriba: la pared bajo el borde debe estar a como mucho esta distancia (m)
+    -- del jugador y mirar hacia fuera (1 = justo hacia donde mira el jugador).
+    MaxEdgeGap = 2.0,
+    MinWallFacing = 0.6,
     -- Flags del shape test: 1 = mundo, 16 = objetos (props/ymaps mapeados).
     Flags = 1 | 16,
 }
@@ -55,9 +59,11 @@ Config.Movement = {
     JumpOut = 0.9,          -- metros que se separa de la pared en el punto más alejado
     JumpTime = 900,         -- duración del salto (ms)
 
-    -- Soltarse a mano: F, solo si quedan como mucho estos metros hasta el suelo.
+    -- F: arriba del todo sube a la cornisa; cerca del suelo (como mucho
+    -- ManualReleaseHeight metros) se suelta de la cuerda.
     KeyRelease = 23,        -- INPUT_ENTER (F)
     ManualReleaseHeight = 3.0,
+    ClimbTimeout = 1500,    -- ms que se espera a que empiece a trepar antes del plan B
 
     -- Con arma: tras dejar de apuntar/disparar, ms que se mantiene la pose de apuntar
     -- antes de volver a la postura de colgar (evita parpadeos entre ráfagas).
@@ -103,6 +109,7 @@ Config.Rope = {
     Enabled = true,
     Type = 4,               -- tipo de cuerda nativo (4 = cuerda fina)
     AnchorModel = `prop_golf_ball`, -- prop invisible que hace de punto de anclaje
+    Collision = true,       -- la cuerda choca con edificios y objetos en vez de atravesarlos
 }
 
 Config.Text = {
@@ -111,5 +118,7 @@ Config.Text = {
     NoLedge = 'No se encuentra un punto de anclaje en la parte superior.',
     CantNow = 'No puedes usar la cuerda ahora mismo.',
     NoItem = 'No tienes una cuerda con arnés.',
+    NoClimb = 'No hay dónde subir aquí.',
+    HelpTop = '~INPUT_ENTER~ Subir a la cornisa  ~INPUT_MOVE_DOWN_ONLY~ Bajar',
     Help = '~INPUT_MOVE_UP_ONLY~ Subir  ~INPUT_MOVE_DOWN_ONLY~ Bajar  ~INPUT_SPRINT~ + ~INPUT_MOVE_DOWN_ONLY~ Deslizarse  ~INPUT_JUMP~ Saltar  ~INPUT_ENTER~ Soltarse (cerca del suelo)  ~INPUT_DETONATE~ Boca abajo',
 }

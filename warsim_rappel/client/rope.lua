@@ -35,8 +35,12 @@ local function create(entry, ped)
     -- La cuerda sale de la mano izquierda (SKEL_L_Hand).
     local p = GetPedBoneCoords(ped, 36029, 0.0, 0.0, 0.0)
     local length = #(a - p)
-    local rope = AddRope(a.x, a.y, a.z, 0.0, 0.0, 0.0, length, Config.Rope.Type,
-        Config.Detection.MaxHeight + 5.0, 0.5, 1.0, false, false, false, 1.0, false, 0)
+    -- ADD_ROPE(pos, rot, maxLength, ropeType, initLength, minLength, lengthChangeRate,
+    --          ppuOnly, collisionOn, lockFromFront, timeMultiplier, breakable, unk)
+    -- Antes iban cambiados maxLength e initLength: la cuerda nacía con 85 m y cruzaba la calle.
+    local rope = AddRope(a.x, a.y, a.z, 0.0, 0.0, 0.0, Config.Detection.MaxHeight + 5.0, Config.Rope.Type,
+        length, 0.5, 1.0, false, Config.Rope.Collision, false, 1.0, false, 0)
+    ActivatePhysics(rope)
     AttachEntitiesToRope(rope, obj, ped, a.x, a.y, a.z, p.x, p.y, p.z, length, false, false, nil, nil)
 
     entry.obj = obj
@@ -74,7 +78,7 @@ CreateThread(function()
                     if active[serverId] ~= entry then destroy(entry) end
                 end
                 if entry.rope then
-                    RopeForceLength(entry.rope, #(entry.anchor - GetEntityCoords(ped)))
+                    RopeForceLength(entry.rope, #(entry.anchor - GetPedBoneCoords(ped, 36029, 0.0, 0.0, 0.0)))
                     sleep = 0
                 end
             elseif entry.rope then

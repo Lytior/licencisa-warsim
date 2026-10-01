@@ -90,22 +90,34 @@ local function detectFromTop(ped, pos, forward)
     local chest = vector3(pos.x, pos.y, feetZ + 0.5)
     if raycast(chest, chest + forward * (cfg.EdgeProbeDistance + 0.5), ped) then return nil end
 
-    -- Buscar el suelo inferior en la caída.
-    local dropStart = pos + forward * cfg.EdgeProbeDistance
+    -- Comprobar la pared justo bajo el borde: rayos desde fuera hacia el edificio a dos
+    -- alturas. Solo vale una pared que dé hacia donde mira el jugador y esté pegada al borde
+    -- (evita anclarse a farolas, semáforos o fachadas lejanas).
+    local wall, normal
+    for _, depth in ipairs({ 1.5, 3.0 }) do
+        local outside = pos + forward * (cfg.EdgeProbeDistance + 2.0)
+        outside = vector3(outside.x, outside.y, feetZ - depth)
+        local hit, hitPos, hitNormal = raycast(outside, outside - forward * 4.5, ped)
+        if not hit or not isVertical(hitNormal) then return nil, Config.Text.NoSurface end
+        local n = horizontal(hitNormal)
+        local facing = n.x * forward.x + n.y * forward.y
+        local gap = #(vector3(hitPos.x, hitPos.y, 0.0) - vector3(pos.x, pos.y, 0.0))
+        if facing < cfg.MinWallFacing or gap > cfg.MaxEdgeGap then
+            return nil, Config.Text.NoSurface
+        end
+        if not wall then wall, normal = hitPos, n end
+    end
+
+    -- Suelo justo debajo de donde colgará la cuerda (no delante del jugador).
+    local ropePoint = wall + normal * Config.Movement.WallOffset
+    local dropStart = vector3(ropePoint.x, ropePoint.y, feetZ - 1.0)
     local dropHit, dropGround = raycast(dropStart, dropStart - vector3(0.0, 0.0, cfg.MaxHeight), ped)
     if not dropHit then return nil, Config.Text.NoSurface end
     if feetZ - dropGround.z < cfg.MinHeight then return nil, Config.Text.TooLow end
 
-    -- Comprobar la pared bajo el borde: rayo desde fuera hacia el edificio.
-    local probeZ = feetZ - 1.5
-    local outside = pos + forward * (cfg.EdgeProbeDistance + 2.0)
-    outside = vector3(outside.x, outside.y, probeZ)
-    local wallHit, wall, normal = raycast(outside, outside - forward * 4.0, ped)
-    if not wallHit or not isVertical(normal) then return nil, Config.Text.NoSurface end
-
     return {
         wall = wall,
-        normal = horizontal(normal),
+        normal = normal,
         topZ = feetZ,
         bottomZ = dropGround.z,
         topStand = vector3(pos.x, pos.y, feetZ),

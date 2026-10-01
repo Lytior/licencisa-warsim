@@ -35,9 +35,10 @@ No hay restricción de rango: cualquier jugador que tenga el objeto puede usarlo
 | **W** / **S** | Subir / bajar. Al soltar, el jugador se queda parado en ese punto de la cuerda. |
 | **Shift + S** | Bajada rápida deslizándose por la cuerda (`rope_slide`). |
 | **Espacio** | Salto contra la pared: se separa y baja 3 m de golpe (`rappel_jump_c`). |
-| **F** | Soltarse a mano, solo si quedan 3 m o menos hasta el suelo. |
+| **F** | Arriba del todo: subir a la cornisa. Cerca del suelo (3 m o menos): soltarse. |
 | **G** (parado) | **Boca abajo** (prototipo): el personaje se gira 180° mirando a la pared. Al moverse, saltar o volver a pulsar G se pone derecho. |
-| Llegar arriba o abajo del todo | El rappel termina solo: arriba el jugador queda de pie en la cornisa; abajo suelta la cuerda a 1 m del suelo (`ReleaseHeight`) y cae solo. Si algo falla y atraviesa el suelo, vuelve al punto donde usó la cuerda. |
+| Llegar arriba del todo | Se queda colgado bajo el borde. Con **F** trepa a la cornisa con la animación del juego (sin teletransporte). |
+| Llegar abajo del todo | Suelta la cuerda a 1 m del suelo (`ReleaseHeight`) y cae solo. Si algo falla y atraviesa el suelo, vuelve al punto donde usó la cuerda. |
 | Parado en la cuerda | Puede sacar el arma y sigue en postura de colgar con el arma en la mano. Solo mientras apunta o dispara pasa a la pose de apuntar del juego (de pie), y vuelve a colgar al dejar de apuntar. Al moverse se guarda el arma. |
 
 ### Detección de superficie (`client/detection.lua`)
