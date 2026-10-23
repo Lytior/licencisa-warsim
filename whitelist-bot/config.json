@@ -1,0 +1,25 @@
+{
+  "ticketChannelId": "ID_DEL_CANAL_DE_TICKETS",
+  "categoryId": "ID_DE_LA_CATEGORIA",
+  "staffRoleId": "ID_DEL_ROL_STAFF",
+  "timeLimitMinutes": 120,
+  "warningMinutesBefore": 15,
+  "closeDelaySeconds": 5,
+  "colors": {
+    "primary": "#5865F2",
+    "success": "#57F287",
+    "warning": "#FEE75C",
+    "danger": "#ED4245"
+  },
+  "countries": [
+    { "name": "España", "emoji": "🇪🇸" },
+    { "name": "México", "emoji": "🇲🇽" },
+    { "name": "Argentina", "emoji": "🇦🇷" },
+    { "name": "Colombia", "emoji": "🇨🇴" },
+    { "name": "Chile", "emoji": "🇨🇱" }
+  ],
+  "template": {
+    "requiredFields": ["Nombre", "Edad", "Experiencia", "Historia del personaje"],
+    "text": "```\nNombre:\nEdad:\nExperiencia:\nHistoria del personaje:\n```\nCopia la plantilla, rellena cada campo y envíala en este canal en un único mensaje."
+  }
+}
