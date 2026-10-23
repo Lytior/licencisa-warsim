@@ -35,6 +35,8 @@ Gestionar canales, Ver canales, Enviar mensajes, Gestionar mensajes, Insertar en
 > El rol del bot debe tener esos permisos también en la categoría de tickets.
 
 ## Notas
+- El panel muestra un botón por país/facción (`countries` en `config.json`: `name`, `label`, `emoji`). Título, descripción y pie del panel se editan en `panel`; el color de la barra en `colors.panel`.
+- Al pulsar un botón se crea directamente el canal `wl-<país>` con la plantilla y el temporizador.
 - La plantilla se detecta cuando un mensaje del dueño contiene todos los `template.requiredFields` (sin distinguir mayúsculas ni tildes).
 - `warningMinutesBefore` (15) envía un aviso antes del borrado; pon `0` para desactivarlo.
 - Al reiniciar, los temporizadores pendientes se retoman y los vencidos se borran al momento.

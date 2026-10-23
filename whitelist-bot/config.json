@@ -5,21 +5,38 @@
   "timeLimitMinutes": 120,
   "warningMinutesBefore": 15,
   "closeDelaySeconds": 5,
+  "panel": {
+    "title": "Ficha Personaje",
+    "description": "⚠️ Haz click a la facción que deseas pertenecer ⚠️",
+    "footer": "Whitelist — Ticketing sin complicaciones",
+    "footerIcon": ""
+  },
   "colors": {
     "primary": "#5865F2",
     "success": "#57F287",
     "warning": "#FEE75C",
-    "danger": "#ED4245"
+    "danger": "#ED4245",
+    "panel": "#57A84F"
   },
   "countries": [
-    { "name": "España", "emoji": "🇪🇸" },
-    { "name": "México", "emoji": "🇲🇽" },
-    { "name": "Argentina", "emoji": "🇦🇷" },
-    { "name": "Colombia", "emoji": "🇨🇴" },
-    { "name": "Chile", "emoji": "🇨🇱" }
+    {
+      "name": "Reino Unido",
+      "label": "Ficha Reino Unido",
+      "emoji": "🔵"
+    },
+    {
+      "name": "Alemania",
+      "label": "Ficha Alemania",
+      "emoji": "🟢"
+    }
   ],
   "template": {
-    "requiredFields": ["Nombre", "Edad", "Experiencia", "Historia del personaje"],
+    "requiredFields": [
+      "Nombre",
+      "Edad",
+      "Experiencia",
+      "Historia del personaje"
+    ],
     "text": "```\nNombre:\nEdad:\nExperiencia:\nHistoria del personaje:\n```\nCopia la plantilla, rellena cada campo y envíala en este canal en un único mensaje."
   }
 }

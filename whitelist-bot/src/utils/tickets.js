@@ -3,7 +3,7 @@ const { ChannelType, PermissionFlagsBits, MessageFlags } = require('discord.js')
 const config = require('./config');
 const store = require('./store');
 const timers = require('./timers');
-const { embed, countryRow, closeRow, welcomeMessage } = require('./embeds');
+const { IDS, embed, closeRow } = require('./embeds');
 const { slugify } = require('./text');
 
 const creating = new Set(); // evita doble clic creando dos tickets a la vez
@@ -11,6 +11,10 @@ const ephemeral = (e) => ({ embeds: [e], flags: MessageFlags.Ephemeral });
 
 async function createTicket(interaction) {
   const { guild, user } = interaction;
+  const country = config.countries.find((c) => IDS.OPEN + slugify(c.name) === interaction.customId);
+  if (!country) {
+    return interaction.reply(ephemeral(embed('danger', '❌ Error', 'Ese país ya no está disponible.')));
+  }
 
   if (interaction.channelId !== config.ticketChannelId) {
     return interaction.reply(ephemeral(embed('danger', '❌ Canal incorrecto', 'Este botón solo funciona en el canal de tickets.')));
@@ -34,7 +38,7 @@ async function createTicket(interaction) {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
   try {
     const channel = await guild.channels.create({
-      name: `ticket-${slugify(user.username)}`,
+      name: `wl-${slugify(country.name)}`,
       type: ChannelType.GuildText,
       parent: config.categoryId,
       topic: `Ticket de whitelist de ${user.tag} (${user.id})`,
@@ -59,12 +63,14 @@ async function createTicket(interaction) {
       ],
     });
 
-    store.set(channel.id, {
+    const deadline = Date.now() + config.timeLimitMinutes * 60_000;
+    const ticket = store.set(channel.id, {
       guildId: guild.id, ownerId: user.id, createdAt: Date.now(),
-      country: null, deadline: null, warned: false, completed: false,
+      country: country.name, deadline, warned: false, completed: false,
     });
 
-    await channel.send(welcomeMessage(user.id));
+    await sendTemplate(channel, ticket, country);
+    timers.schedule(interaction.client, ticket);
     await interaction.editReply({ embeds: [embed('success', '✅ Ticket creado', `Tu ticket: ${channel}`)] });
   } catch (err) {
     console.error('[tickets] Error creando ticket:', err);
@@ -77,49 +83,23 @@ async function createTicket(interaction) {
   }
 }
 
-async function selectCountry(interaction) {
-  const ticket = store.get(interaction.channelId);
-  if (!ticket) {
-    return interaction.reply(ephemeral(embed('danger', '❌ Error', 'Este canal no es un ticket activo.')));
-  }
-  if (interaction.user.id !== ticket.ownerId) {
-    return interaction.reply(ephemeral(embed('danger', '⛔ No permitido', 'Solo el dueño del ticket puede elegir el país.')));
-  }
-  if (ticket.country) {
-    return interaction.reply(ephemeral(embed('warning', '⚠️ Ya elegido', `Ya seleccionaste **${ticket.country}**.`)));
-  }
-
-  const country = config.countries.find((c) => slugify(c.name) === interaction.values[0]);
-  if (!country) {
-    return interaction.reply(ephemeral(embed('danger', '❌ Error', 'País no válido.')));
-  }
-
-  // Guardar ANTES de cualquier llamada lenta para evitar dobles selecciones
-  const deadline = Date.now() + config.timeLimitMinutes * 60_000;
-  store.set(ticket.channelId, { country: country.name, deadline });
-
-  // Desactivar el menú en el mensaje original
-  await interaction.update({ components: [countryRow(true, country.name), closeRow()] }).catch(() => {});
-
-  // Renombrar canal (Discord limita a 2 renombres cada 10 min por canal)
-  await interaction.channel.setName(`wl-${slugify(country.name)}`).catch((err) =>
-    console.error('[tickets] No se pudo renombrar el canal:', err.message));
-
+/** Envía la plantilla, el aviso de tiempo y el botón de cerrar */
+async function sendTemplate(channel, ticket, country) {
   const horas = config.timeLimitMinutes / 60;
   const tiempo = Number.isInteger(horas) ? `${horas} hora${horas === 1 ? '' : 's'}` : `${config.timeLimitMinutes} minutos`;
+  const ts = Math.floor(ticket.deadline / 1000);
 
-  await interaction.channel.send({
+  await channel.send({
     content: `<@${ticket.ownerId}>`,
     embeds: [
-      embed('primary', `${country.emoji} Plantilla de whitelist — ${country.name}`, config.template.text),
+      embed('primary', `${country.emoji} Ficha de personaje — ${country.label || country.name}`, config.template.text),
       embed('warning', '⏳ Tiempo límite',
         `**Tienes ${tiempo} para enviar la plantilla rellenada. ` +
         'Si no la envías, el ticket se eliminará automáticamente.**\n' +
-        `Fecha límite: <t:${Math.floor(deadline / 1000)}:F> (<t:${Math.floor(deadline / 1000)}:R>)`),
+        `Fecha límite: <t:${ts}:F> (<t:${ts}:R>)`),
     ],
-  }).catch((err) => console.error('[tickets] Error enviando plantilla:', err.message));
-
-  timers.schedule(interaction.client, store.get(ticket.channelId));
+    components: [closeRow()],
+  });
 }
 
 async function closeTicket(interaction) {
@@ -142,4 +122,4 @@ async function closeTicket(interaction) {
   }, config.closeDelaySeconds * 1000);
 }
 
-module.exports = { createTicket, selectCountry, closeTicket };
+module.exports = { createTicket, closeTicket };

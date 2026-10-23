@@ -11,10 +11,8 @@ module.exports = {
         const command = interaction.client.commands.get(interaction.commandName);
         if (command) await command.execute(interaction);
       } else if (interaction.isButton()) {
-        if (interaction.customId === IDS.OPEN) await tickets.createTicket(interaction);
+        if (interaction.customId.startsWith(IDS.OPEN)) await tickets.createTicket(interaction);
         else if (interaction.customId === IDS.CLOSE) await tickets.closeTicket(interaction);
-      } else if (interaction.isStringSelectMenu() && interaction.customId === IDS.COUNTRY) {
-        await tickets.selectCountry(interaction);
       }
     } catch (err) {
       console.error('[interaction] Error:', err);

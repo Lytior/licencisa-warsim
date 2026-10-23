@@ -1,28 +1,39 @@
 // Constructores de embeds y componentes reutilizables
 const {
-  EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder,
+  EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle,
 } = require('discord.js');
 const config = require('./config');
 const { slugify } = require('./text');
 
 const IDS = {
-  OPEN: 'ticket_open',
+  OPEN: 'ticket_open:', // + slug del país (ej. ticket_open:espana)
   CLOSE: 'ticket_close',
-  COUNTRY: 'ticket_country',
 };
 
 const embed = (color, title, description) =>
   new EmbedBuilder().setColor(config.colors[color]).setTitle(title).setDescription(description).setTimestamp();
 
+/** Panel estilo "Ticket Tool": embed con barra de color y un botón gris por país */
 function panelMessage() {
-  return {
-    embeds: [embed('primary', '📋 Whitelist',
-      'Pulsa el botón de abajo para abrir un ticket de whitelist.\n' +
-      'Se creará un canal privado donde podrás elegir tu país y enviar tu solicitud.')],
-    components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId(IDS.OPEN).setLabel('Abrir ticket').setEmoji('🎫').setStyle(ButtonStyle.Primary),
-    )],
-  };
+  const { panel } = config;
+  const panelEmbed = new EmbedBuilder()
+    .setColor(config.colors.panel)
+    .setTitle(panel.title)
+    .setDescription(panel.description);
+  if (panel.footer) panelEmbed.setFooter({ text: panel.footer, iconURL: panel.footerIcon || undefined });
+
+  // Discord permite 5 botones por fila y 5 filas (máx. 25 países)
+  const buttons = config.countries.slice(0, 25).map((c) =>
+    new ButtonBuilder()
+      .setCustomId(IDS.OPEN + slugify(c.name))
+      .setLabel(c.label || c.name)
+      .setEmoji(c.emoji)
+      .setStyle(ButtonStyle.Secondary));
+  const components = [];
+  for (let i = 0; i < buttons.length; i += 5) {
+    components.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
+  }
+  return { embeds: [panelEmbed], components };
 }
 
 function closeRow() {
@@ -31,28 +42,4 @@ function closeRow() {
   );
 }
 
-function countryRow(disabled = false, selected = null) {
-  const menu = new StringSelectMenuBuilder()
-    .setCustomId(IDS.COUNTRY)
-    .setPlaceholder(selected ? `Seleccionado: ${selected}` : 'Selecciona tu país')
-    .setDisabled(disabled)
-    .addOptions(config.countries.slice(0, 25).map((c) => ({
-      label: c.name,
-      value: slugify(c.name),
-      emoji: c.emoji,
-      default: selected === c.name,
-    })));
-  return new ActionRowBuilder().addComponents(menu);
-}
-
-function welcomeMessage(userId) {
-  return {
-    content: `<@${userId}>`,
-    embeds: [embed('primary', '👋 ¡Bienvenido/a a tu ticket de whitelist!',
-      'Selecciona en el menú de abajo el **país** para el que solicitas la whitelist.\n' +
-      'Una vez elegido no se podrá cambiar.')],
-    components: [countryRow(), closeRow()],
-  };
-}
-
-module.exports = { IDS, embed, panelMessage, closeRow, countryRow, welcomeMessage };
+module.exports = { IDS, embed, panelMessage, closeRow };
