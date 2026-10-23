@@ -1,7 +1,7 @@
 {
-  "ticketChannelId": "ID_DEL_CANAL_DE_TICKETS",
-  "categoryId": "ID_DE_LA_CATEGORIA",
-  "staffRoleId": "ID_DEL_ROL_STAFF",
+  "ticketChannelId": "1563214489770528808",
+  "categoryId": "1340817663575719986",
+  "staffRoleId": "1113557376453316679",
   "timeLimitMinutes": 120,
   "warningMinutesBefore": 15,
   "closeDelaySeconds": 5,
