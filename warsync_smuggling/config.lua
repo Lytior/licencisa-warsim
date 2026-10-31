@@ -92,7 +92,7 @@ Config.Binoculars = {
 Config.Goggles = {
     item = 'thermal_goggles',
     -- Worn like a vest: use the item to put them on / take them off.
-    duration = 8 * 60 * 60,  -- 8 REAL hours of life. Counts down while they are worn; then they break.
+    duration = 60 * 60,      -- 1 REAL hour of life. Counts down while they are worn; then they break.
     saveInterval = 60,       -- seconds between saves of the remaining time (item metadata)
     toggleKey = 'L',         -- turns thermal vision on/off while wearing them (rebindable in Key Bindings)
     -- Helmet prop shown while worn (adjust to your clothing pack). Set to false to disable the prop.

@@ -6,7 +6,7 @@ WSM.UseHandlers[Config.Binoculars.item] = function(src)
 end
 
 ---------------------------------------------------------------------------
--- Thermal goggles: equippable (like a vest) with 8 real hours of life stored in the
+-- Thermal goggles: equippable (like a vest) with 1 real hour of life stored in the
 -- item metadata (metadata.timeLeft in seconds, metadata.durability 0-100 for the ox bar).
 ---------------------------------------------------------------------------
 local ox = exports.ox_inventory
