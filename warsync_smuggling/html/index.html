@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>WarSync Smuggling</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Notifications -->
+    <div id="toasts"></div>
+
+    <!-- Crafting menu -->
+    <div id="craft" class="hidden">
+        <div class="craft-panel">
+            <header>
+                <div>
+                    <div class="kicker">WARSYNC // BLACK MARKET</div>
+                    <h1>Contraband Workbench</h1>
+                </div>
+                <button class="icon-btn" id="craft-close" aria-label="Close">✕</button>
+            </header>
+            <div class="craft-search"><input id="craft-filter" placeholder="Search contraband…" autocomplete="off"></div>
+            <div id="craft-list"></div>
+            <footer>No materials needed. Stay at the bench while crafting — leaving or cancelling loses all progress.</footer>
+        </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div id="progress" class="hidden">
+        <div class="progress-top">
+            <span id="progress-label">Working…</span>
+            <span id="progress-time">0:00</span>
+        </div>
+        <div class="progress-track"><div id="progress-fill"></div><div class="progress-glow"></div></div>
+        <div class="progress-hint">Press <kbd>X</kbd> to cancel — progress will be lost</div>
+    </div>
+
+    <!-- Motion tablet -->
+    <div id="tablet" class="hidden">
+        <div class="tablet-frame">
+            <div class="tablet-head">
+                <span class="dot" id="tablet-led"></span>
+                <span class="tablet-title">MOTION TRACKER</span>
+                <span id="tablet-timer">1:00</span>
+            </div>
+            <div class="radar-wrap">
+                <canvas id="radar" width="440" height="440"></canvas>
+                <div id="tablet-broken" class="hidden">SYSTEM FAILURE</div>
+            </div>
+            <div class="tablet-foot">
+                <div class="tbar"><div id="tablet-bar"></div></div>
+                <button id="tablet-btn" class="pwr">POWER ON</button>
+            </div>
+            <div class="tablet-hint">Hold <kbd id="tablet-key">ALT</kbd> to use the cursor</div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

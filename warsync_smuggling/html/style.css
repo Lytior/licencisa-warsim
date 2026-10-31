@@ -1,0 +1,124 @@
+:root {
+    --bg: rgba(12, 14, 12, 0.86);
+    --panel: rgba(20, 23, 20, 0.92);
+    --line: rgba(255, 255, 255, 0.08);
+    --text: #e9ece6;
+    --muted: #8d958a;
+    --accent: #f2a93b;
+    --accent-2: #ffcc70;
+    --ok: #6fd28a;
+    --err: #ff5f56;
+    --warn: #ffb547;
+    --radar: #49f28c;
+    --common: #9aa59a;
+    --rare: #4fa3ff;
+    --epic: #b072ff;
+    --legendary: #f2a93b;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; font-family: 'Inter', sans-serif; color: var(--text); user-select: none; }
+.hidden { display: none !important; }
+kbd { font-family: 'Rajdhani', sans-serif; font-weight: 700; padding: 1px 7px; border-radius: 4px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); color: var(--accent-2); }
+
+/* ---------------- Toasts ---------------- */
+#toasts { position: fixed; top: 24px; right: 24px; display: flex; flex-direction: column; gap: 10px; width: 340px; z-index: 50; }
+.toast {
+    position: relative; overflow: hidden; padding: 12px 16px 12px 18px; border-radius: 10px;
+    background: var(--bg); backdrop-filter: blur(10px); border: 1px solid var(--line);
+    box-shadow: 0 10px 30px rgba(0,0,0,.35); animation: toastIn .35s cubic-bezier(.2,.9,.3,1.2) both;
+}
+.toast::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--c, var(--accent)); }
+.toast .t-title { font-family: 'Rajdhani'; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: 13px; color: var(--c, var(--accent)); }
+.toast .t-text { font-size: 13.5px; line-height: 1.4; margin-top: 2px; }
+.toast .t-life { position: absolute; left: 0; bottom: 0; height: 2px; background: var(--c, var(--accent)); opacity: .6; animation: life linear forwards; }
+.toast.out { animation: toastOut .3s ease forwards; }
+.toast.success { --c: var(--ok); } .toast.error { --c: var(--err); } .toast.warning { --c: var(--warn); }
+@keyframes toastIn { from { opacity: 0; transform: translateX(40px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes toastOut { to { opacity: 0; transform: translateX(40px); } }
+@keyframes life { from { width: 100%; } to { width: 0; } }
+
+/* ---------------- Crafting ---------------- */
+#craft { position: fixed; inset: 0; display: grid; place-items: center; background: radial-gradient(circle at center, rgba(0,0,0,.35), rgba(0,0,0,.65)); animation: fade .25s ease both; }
+.craft-panel {
+    width: min(920px, 92vw); max-height: 82vh; display: flex; flex-direction: column;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,.6); animation: pop .35s cubic-bezier(.2,.9,.3,1.15) both;
+}
+.craft-panel header { display: flex; justify-content: space-between; align-items: center; padding: 22px 26px 14px;
+    background: linear-gradient(180deg, rgba(242,169,59,.12), transparent); border-bottom: 1px solid var(--line); }
+.kicker { font-family: 'Rajdhani'; font-weight: 700; letter-spacing: .25em; font-size: 12px; color: var(--accent); }
+h1 { font-family: 'Rajdhani'; font-weight: 700; font-size: 30px; letter-spacing: .02em; }
+.icon-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--text); cursor: pointer; font-size: 14px; transition: .2s; }
+.icon-btn:hover { background: var(--err); border-color: var(--err); }
+.craft-search { padding: 14px 26px 6px; }
+.craft-search input { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.3); color: var(--text); font: inherit; outline: none; transition: .2s; }
+.craft-search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(242,169,59,.15); }
+#craft-list { padding: 14px 26px 20px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+#craft-list::-webkit-scrollbar { width: 6px; } #craft-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 3px; }
+.card {
+    --t: var(--common); position: relative; padding: 14px 16px; border-radius: 12px; cursor: pointer;
+    background: linear-gradient(160deg, rgba(255,255,255,.045), rgba(255,255,255,.01)); border: 1px solid var(--line);
+    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; animation: rise .4s ease both;
+}
+.card:hover { transform: translateY(-3px); border-color: var(--t); box-shadow: 0 10px 28px rgba(0,0,0,.4), 0 0 0 1px var(--t) inset; }
+.card:active { transform: translateY(-1px) scale(.99); }
+.card.rare { --t: var(--rare); } .card.epic { --t: var(--epic); } .card.legendary { --t: var(--legendary); }
+.card.legendary { background: linear-gradient(160deg, rgba(242,169,59,.14), rgba(255,255,255,.01)); }
+.card .tier { font-family: 'Rajdhani'; font-weight: 700; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--t); }
+.card .name { font-family: 'Rajdhani'; font-weight: 700; font-size: 20px; margin: 2px 0 6px; }
+.card .desc { font-size: 12.5px; line-height: 1.45; color: var(--muted); min-height: 36px; }
+.card .meta { display: flex; gap: 8px; margin-top: 12px; }
+.chip { font-size: 11.5px; padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,.06); color: var(--text); }
+.craft-panel footer { padding: 12px 26px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); }
+@keyframes fade { from { opacity: 0; } }
+@keyframes pop { from { opacity: 0; transform: scale(.94) translateY(10px); } }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+
+/* ---------------- Progress ---------------- */
+#progress { position: fixed; left: 50%; bottom: 9vh; width: 440px; transform: translateX(-50%); padding: 14px 18px 12px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 12px; backdrop-filter: blur(10px);
+    box-shadow: 0 16px 40px rgba(0,0,0,.45); animation: progIn .3s cubic-bezier(.2,.9,.3,1.2) both; }
+#progress.done { animation: progOut .45s ease forwards; }
+#progress.fail { animation: shake .35s ease, progOut .45s ease .3s forwards; }
+.progress-top { display: flex; justify-content: space-between; font-family: 'Rajdhani'; font-weight: 700; font-size: 16px; letter-spacing: .04em; margin-bottom: 9px; }
+#progress-time { color: var(--accent-2); font-variant-numeric: tabular-nums; }
+.progress-track { position: relative; height: 8px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
+#progress-fill { height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #d27d17, var(--accent), var(--accent-2)); box-shadow: 0 0 12px rgba(242,169,59,.6); }
+#progress.fail #progress-fill { background: var(--err); box-shadow: 0 0 12px rgba(255,95,86,.6); }
+#progress.done #progress-fill { background: var(--ok); }
+.progress-glow { position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent); width: 30%; animation: sweep 1.6s linear infinite; }
+.progress-hint { margin-top: 8px; font-size: 11.5px; color: var(--muted); text-align: center; }
+@keyframes progIn { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes progOut { to { opacity: 0; transform: translate(-50%, 16px); } }
+@keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(400%); } }
+@keyframes shake { 0%,100% { margin-left: 0 } 25% { margin-left: -8px } 75% { margin-left: 8px } }
+
+/* ---------------- Tablet ---------------- */
+#tablet { position: fixed; right: 28px; bottom: 28px; width: 290px; animation: tabIn .4s cubic-bezier(.2,.9,.3,1.15) both; }
+#tablet.leaving { animation: tabOut .3s ease forwards; }
+.tablet-frame { padding: 12px; border-radius: 22px; background: linear-gradient(160deg, #2a2e29, #141613); border: 1px solid rgba(255,255,255,.1);
+    box-shadow: 0 20px 50px rgba(0,0,0,.55), inset 0 0 0 4px #0b0c0b; }
+.tablet-head { display: flex; align-items: center; gap: 8px; padding: 4px 6px 10px; font-family: 'Rajdhani'; font-weight: 700; letter-spacing: .12em; font-size: 13px; }
+.tablet-title { flex: 1; color: var(--muted); }
+#tablet-timer { font-variant-numeric: tabular-nums; color: var(--radar); font-size: 16px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #444; transition: .3s; }
+.dot.on { background: var(--radar); box-shadow: 0 0 10px var(--radar); animation: blink 1.2s infinite; }
+.radar-wrap { position: relative; border-radius: 14px; overflow: hidden; background: #051108; border: 1px solid rgba(73,242,140,.2); }
+#radar { width: 100%; display: block; }
+#tablet-broken { position: absolute; inset: 0; display: grid; place-items: center; font-family: 'Rajdhani'; font-weight: 700; font-size: 26px; letter-spacing: .15em; color: var(--err);
+    background: repeating-linear-gradient(0deg, rgba(255,0,0,.08) 0 2px, transparent 2px 4px), rgba(0,0,0,.7); animation: glitch .25s steps(2) infinite; }
+.tablet-foot { display: flex; align-items: center; gap: 10px; padding: 10px 2px 2px; }
+.tbar { flex: 1; height: 6px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
+#tablet-bar { height: 100%; width: 100%; background: var(--radar); transition: width 1s linear; }
+.pwr { padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(73,242,140,.4); background: rgba(73,242,140,.08); color: var(--radar);
+    font-family: 'Rajdhani'; font-weight: 700; letter-spacing: .1em; cursor: pointer; transition: .2s; pointer-events: none; opacity: .55; }
+#tablet.cursor .pwr { pointer-events: auto; opacity: 1; }
+.pwr:hover { background: rgba(73,242,140,.2); }
+.pwr.on { border-color: rgba(255,95,86,.5); color: var(--err); background: rgba(255,95,86,.08); }
+.tablet-hint { text-align: center; font-size: 11px; color: var(--muted); padding-top: 8px; transition: .2s; }
+#tablet.cursor .tablet-hint { color: var(--accent-2); }
+@keyframes tabIn { from { opacity: 0; transform: translateY(40px) rotate(2deg); } }
+@keyframes tabOut { to { opacity: 0; transform: translateY(40px); } }
+@keyframes blink { 50% { opacity: .35; } }
+@keyframes glitch { 50% { transform: translateX(2px); filter: hue-rotate(20deg); } }
