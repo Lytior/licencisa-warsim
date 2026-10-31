@@ -29,7 +29,7 @@
 ['thermal_goggles'] = {
     label = 'Thermal Goggles',
     weight = 1500, stack = false, close = true, consume = 0,
-    description = 'Premium head-mounted thermal vision. Hands stay free. Far more valuable than binoculars.',
+    description = 'Premium head-mounted thermal vision, worn like a vest. Press L to switch it on/off. Battery lasts 8 real hours of wear. Far more valuable than binoculars.',
     server = { export = 'warsync_smuggling.useItem' },
 },
 

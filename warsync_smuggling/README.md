@@ -37,7 +37,7 @@ Only civilian jobs see the bench prompt and blip. Crafting needs no materials, t
 | --- | --- |
 | Cluster Rocket Launcher + Cluster Rocket Pack | Use the launcher → long preload (eats 1 rocket pack) → aim and fire a cluster volley. Use it again to re-equip / preload. Homing: `Config.Launcher.homing.enabled` |
 | Thermal Binoculars | Use to raise them. Mouse to look, wheel to zoom, Backspace to lower |
-| Thermal Goggles | Use to toggle on/off, hands free |
+| Thermal Goggles | Use the item to put them on / take them off (like a vest). While worn, **L** toggles thermal vision. 8 real hours of life while worn (saved in the item, visible as durability), then they break |
 | Mine / EMP Mine / Proximity Sensor | Use → preview → **E** to plant. Sensors can be disabled by others / picked up by the owner with **E** |
 | Motion Tablet | Use to show/hide. Hold **LEFT ALT** (rebindable in Settings → Key Bindings → FiveM) to get a cursor and click POWER. 60 s of active time, then it breaks |
 | Alcohol / 3 drugs | Use to consume. Durations and strength in `Config.Effects` |

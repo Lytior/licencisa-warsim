@@ -65,40 +65,57 @@ end)
 ---------------------------------------------------------------------------
 -- Thermal goggles (worn, hands free)
 ---------------------------------------------------------------------------
-local goggles = false
+local worn, vision = false, false
 local savedProp
 
-local function setGoggles(on)
-    local ped = PlayerPedId()
-    goggles = on
+local function setVision(on)
+    vision = on
     SetSeethrough(on)
-    local p = Config.Goggles.prop
-    if p then
-        local def = IsPedMale(ped) and p.male or p.female
-        if on then
-            savedProp = { GetPedPropIndex(ped, def.component), GetPedPropTextureIndex(ped, def.component) }
-            SetPedPropIndex(ped, def.component, def.drawable, def.texture, true)
-        elseif savedProp then
-            if savedProp[1] == -1 then ClearPedProp(ped, def.component)
-            else SetPedPropIndex(ped, def.component, savedProp[1], savedProp[2], true) end
-            savedProp = nil
-        end
-    end
     PlaySoundFrontend(-1, on and 'NIGHTVISION_ON' or 'NIGHTVISION_OFF', 'HUD_FRONTEND_DEFAULT_SOUNDSET', false)
 end
 
-RegisterNetEvent('wsm:goggles:toggle', function()
-    setGoggles(not goggles)
-    if goggles then
-        CreateThread(function()
-            -- cheap watchdog: removes the effect if the goggles leave the inventory or the player dies
-            while goggles do
-                Wait(2000)
-                if not WSM.HasItem(Config.Goggles.item) or IsEntityDead(PlayerPedId()) then setGoggles(false) end
-            end
-        end)
+local function setProp(on)
+    local p = Config.Goggles.prop
+    if not p then return end
+    local ped = PlayerPedId()
+    local def = IsPedMale(ped) and p.male or p.female
+    if on then
+        savedProp = { GetPedPropIndex(ped, def.component), GetPedPropTextureIndex(ped, def.component) }
+        SetPedPropIndex(ped, def.component, def.drawable, def.texture, true)
+    elseif savedProp then
+        if savedProp[1] == -1 then ClearPedProp(ped, def.component)
+        else SetPedPropIndex(ped, def.component, savedProp[1], savedProp[2], true) end
+        savedProp = nil
     end
+end
+
+RegisterNetEvent('wsm:goggles:equip', function(timeLeft)
+    if worn then return end
+    worn = true
+    setProp(true)
+    local h, m = math.floor(timeLeft / 3600), math.floor(timeLeft % 3600 / 60)
+    WSM.Notify(('Goggles equipped (%dh %02dm left). Press L to toggle thermal vision.'):format(h, m), 'success', 'Thermal goggles')
+    CreateThread(function()
+        while worn do -- watchdog: death turns the vision off
+            Wait(2000)
+            if vision and IsEntityDead(PlayerPedId()) then setVision(false) end
+        end
+    end)
 end)
+
+RegisterNetEvent('wsm:goggles:unequip', function()
+    if not worn then return end
+    worn = false
+    if vision then setVision(false) end
+    setProp(false)
+end)
+
+RegisterCommand('wsm_thermal', function()
+    if not worn then return end
+    if IsEntityDead(PlayerPedId()) then return end
+    setVision(not vision)
+end, false)
+RegisterKeyMapping('wsm_thermal', 'Thermal goggles: toggle vision', 'keyboard', Config.Goggles.toggleKey)
 
 ---------------------------------------------------------------------------
 -- Alcohol & drugs
